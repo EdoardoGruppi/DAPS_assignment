@@ -1,10 +1,10 @@
 # Description of the project
 
-[Project](https://github.com/EdoardoGruppi/DAPS_assignment) ~ [Guide](https://github.com/EdoardoGruppi/AMLS_assignment20_21/blob/main/Instructions.md)
+[Project](https://github.com/EdoardoGruppi/DAPS_assignment) ~ [Guide](https://github.com/EdoardoGruppi/DAPS_assignment/blob/Secondary/code/Instructions.md)
 
 ## How to start
 
-A comprehensive guide concerning how to run the code along with additional information is provided in the file [Instruction.md](https://github.com/EdoardoGruppi/AMLS_assignment20_21/blob/main/Instructions.md).
+A comprehensive guide concerning how to run the code along with additional information is provided in the file [Instruction.md](https://github.com/EdoardoGruppi/DAPS_assignment/blob/Secondary/code/Instructions.md).
 
 To first understand: which packages are required to the execution of the code, the role of each file or the software used read the Sections below.
 
