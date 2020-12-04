@@ -33,6 +33,10 @@ Please note that the descriptions provided in this subsection are taken directly
 
 - **Seaborn** is a data visualization library based on matplotlib that provides a high-level interface for drawing attractive and informative statistical graphics.
 
+- **Alpha Advantage** delivers a free API for real time financial data and most used finance indicators in a simple json or pandas format. This module implements a python interface to the free API provided by Alpha Vantage.
+
+ALTRO
+
 ## Role of each file
 
 **main.py** is the starting point of the entire project. It defines the order in which instructions are realised. More precisely, it is responsible to call functions from other files in order to divide the datasets provided, pre-process images and instantiate, train and test models.

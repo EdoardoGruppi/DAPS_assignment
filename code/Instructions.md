@@ -3,6 +3,10 @@
 ## Setup
 
 1. Install Tensorflow and all the other packages appointed in the [README.md](https://github.com/EdoardoGruppi/AMLS_assignment20_21/blob/main/README.md) file.
+2. Install Alpha Advantage package....
+```
+pip install alpha_vantage
+```
 
 ## Run the code
 

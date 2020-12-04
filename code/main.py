@@ -12,28 +12,28 @@ if len(physical_devices) is not 0:
 
 # BASE =================================================================================================================
 # todo 1 or 2 models? Is it the same model?
-training_batches, valid_batches, test_batches = data_preprocessing(...)
-input_shape = ...
-# Build model object.
-model= base(input_shape)
-# Train model based on the training set
-base_train, base_valid = model.train(...)
-# Test model based on the test set.
-base_test = model.test(...)
-# Clean up memory
-del ...
+# training_batches, valid_batches, test_batches = data_preprocessing(...)
+# input_shape = ...
+# # Build model object.
+# model= base(input_shape)
+# # Train model based on the training set
+# base_train, base_valid = model.train(...)
+# # Test model based on the test set.
+# base_test = model.test(...)
+# # Clean up memory
+# del ...
 
 # ADV ==================================================================================================================
-training_batches, valid_batches, test_batches = data_preprocessing(...)
-input_shape = ...
-# Build model object.
-model= base(input_shape)
-# Train model based on the training set
-base_train, base_valid = model.train(...)
-# Test model based on the test set.
-base_test = model.test(...)
-# Clean up memory
-del ...
+# training_batches, valid_batches, test_batches = data_preprocessing(...)
+# input_shape = ...
+# # Build model object.
+# model= base(input_shape)
+# # Train model based on the training set
+# base_train, base_valid = model.train(...)
+# # Test model based on the test set.
+# base_test = model.test(...)
+# # Clean up memory
+# del ...
 
 # RESULTS ==============================================================================================================
 # Print out your results with following format:
