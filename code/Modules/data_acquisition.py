@@ -20,19 +20,36 @@ def get_daily_time_series():
     return data_directory
 
 
-def get_bbands(time_period=20, plot=True):
+def get_indicator(indicator, time_period=20, plot=True):
     ti = TechIndicators(key=alpha_vantage_api_key, output_format='pandas', indexing_type='date')
-    data, meta_data1 = ti.get_bbands(symbol=company, interval='daily', time_period=time_period)
+    indicator_dict = {"bbands": ti.get_bbands, "sma": ti.get_sma}
+    data_directory = os.path.join(base_dir, '{}.pkl'.format(indicator))
+    function = indicator_dict[indicator]
+    data, meta_data1 = function(symbol=company, interval='daily', time_period=time_period)
+    data = data.sort_index(ascending=False)
     # Retain only the entries from April 2017
     data = data.loc[:'2017-04-01 00:00:00']
-    data_directory = os.path.join(base_dir, 'bbands.pkl')
     pd.to_pickle(data, data_directory)
     if plot:
         sn.set()
         data.plot()
-        plt.title('BBbands indicator for Microsoft stock')
+        plt.title('{} indicator for Microsoft stock'.format(indicator))
         plt.show()
     return data_directory
 
 
-
+# def get_multiple_indicators(indicators, time_period=20, plot=True):
+#     ti = TechIndicators(key=alpha_vantage_api_key, output_format='pandas', indexing_type='date')
+#     data_directory = os.path.join(base_dir, 'all_indicators.pkl')
+#     indicator_dict = {"bbands": ti.get_bbands, "sma": ti.get_sma}
+#     df = pd.DataFrame()
+#     for indicator in indicators:
+#         function = indicator_dict[indicator]
+#         data, meta_data1 = function(symbol=company, interval='daily', time_period=time_period)
+#         data = data.sort_index(ascending=False)
+#         if df.empty:
+#             df = data.loc[:'2017-04-01 00:00:00']
+#         else:
+#             # Retain only the entries from April 2017
+#             df = pd.DataFrame.join(df, data.loc[:'2017-04-01 00:00:00'])
+#     return data_directory
