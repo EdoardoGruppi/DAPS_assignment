@@ -7,7 +7,10 @@
 ```
 pip install alpha_vantage
 ```
-
+3. Install py tweet package....
+```
+pip install tweepy
+```
 ## Run the code
 
 Once all the necessary packages have been installed you can run the code by typing this line on the terminal.

@@ -1,13 +1,10 @@
 # Import packages
 from Modules.config import *
-from Modules.data_acquisition import get_daily_time_series, get_indicator
 from Modules.visualization import plot_dataframe
 import pandas as pd
 import os
 
-# # time_series_dir = get_daily_time_series()
-# # bbands_dir = get_indicator('bbands')
-# # sma_dir = get_indicator('sma')
+# STOCK DATA ACQUISITION ===============================================================================================
 time_series_dir = os.path.join(base_dir, 'time_series.pkl')
 bbands_dir = os.path.join(base_dir, 'bbands.pkl')
 sma_dir = os.path.join(base_dir, 'sma.pkl')

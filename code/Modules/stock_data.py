@@ -1,7 +1,6 @@
 # Import packages
 from Modules.config import *
 from alpha_vantage.timeseries import TimeSeries
-from alpha_vantage.sectorperformance import SectorPerformances
 from alpha_vantage.techindicators import TechIndicators
 import matplotlib.pyplot as plt
 import seaborn as sn
