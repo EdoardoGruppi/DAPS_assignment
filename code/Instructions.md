@@ -7,9 +7,9 @@
 ```
 pip install alpha_vantage
 ```
-3. Install py tweet package....
+3. Install twint
 ```
-pip install tweepy
+pip3 install --user --upgrade git+https://github.com/twintproject/twint.git@origin/master#egg=twint
 ```
 ## Run the code
 

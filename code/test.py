@@ -1,6 +1,6 @@
 # Import packages
 from Modules.config import *
-from Modules.visualization import plot_dataframe
+from Modules.utilities import plot_dataframe
 import pandas as pd
 import os
 
