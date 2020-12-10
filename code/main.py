@@ -11,7 +11,6 @@ if len(physical_devices) is not 0:
 # todo put others section
 
 # BASE =================================================================================================================
-# todo 1 or 2 models? Is it the same model?
 # training_batches, valid_batches, test_batches = data_preprocessing(...)
 # input_shape = ...
 # # Build model object.
