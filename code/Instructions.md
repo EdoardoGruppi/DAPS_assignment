@@ -9,7 +9,22 @@ pip install alpha_vantage
 ```
 3. Install twint
 ```
-pip3 install --user --upgrade git+https://github.com/twintproject/twint.git@origin/master#egg=twint
+pip install --user --upgrade git+https://github.com/twintproject/twint.git@origin/master#egg=twint
+```
+3. Install flair. to run with GPU you must have torch with cuda enabled
+```python 
+import torch
+import flair
+device = None
+if torch.cuda.is_available():
+    device = torch.device('cuda:0')
+else:
+    device = torch.device('cpu')
+print(device)
+torch.zeros(1).cuda()
+```
+```
+pip install flair
 ```
 ## Run the code
 

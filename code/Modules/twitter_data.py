@@ -5,6 +5,9 @@ import os
 from Modules.utilities import csv2pickle, count_missing_values
 from pandas import read_pickle
 from datetime import datetime, timedelta
+import re
+from Modules.sentiment_analysis import flair_analysis, vader_analysis
+from pandas import to_pickle
 
 
 def set_query(words='', hashtag=None, mention=None, username=None, lang=None, until=None, since=None, replies=False,
@@ -77,25 +80,48 @@ def get_tweets(query, hide=True, store=True, filename='Tweets'):
     return dataframe_path
 
 
-def tweet_preprocessing(df_path, like_weight=0, replies_weight=0, retweet_weight=0):
+def clean_tweets(tweet):
+    # todo improve the cleaning
+    # Sub method replaces anything matching.
+    # Delete all the https (and http) links that appear within the text.
+    tweet = re.sub(r"(http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*,\\])+)", '', tweet)
+    # Replace mentions and hashtags related to Microsoft and delete all the others.
+    tweet = re.sub(r"(?i)[@#]Microsoft", 'Microsoft', tweet)
+    tweet = re.sub(r"(?i)[@#][a-z0-9_]+", '', tweet)
+    # Same for cashtags.
+    tweet = re.sub(r"(?i)\$Msft", 'Microsoft', tweet)
+    tweet = re.sub(r"(?i)\$[a-z0-9_]+", '', tweet)
+    # Reduce the whitespaces between two words to only one.
+    tweet = re.sub(r"\s+", ' ', tweet)
+    return tweet
+
+
+def tweet_preprocessing(df_path, analysis='vader', like_weight=0, reply_weight=0, retweet_weight=0):
+    function_dict = {'vader': vader_analysis, 'flair': flair_analysis}
     tweets = read_pickle(df_path)
     # drop() function is not used since the number of columns to keep is lower than the number of columns to delete.
     # The new dataframe simply overwrites the previous one.
     tweets = tweets[['date', 'time', 'tweet', 'replies_count', 'retweets_count', 'likes_count']]
     tweets['date'] = tweets['date'] + ' ' + tweets['time']
-    tweets['date'] = tweets['date'].apply(lambda x:  datetime.strptime(x, "%Y-%m-%d %H:%M:%S"))
+    tweets['date'] = tweets['date'].apply(lambda x: datetime.strptime(x, "%Y-%m-%d %H:%M:%S"))
     tweets = tweets.drop('time', axis=1)
     # If the message is twitted after the 21:00 pm in London (16:00 pm in NewYork - closing time of the nasdaq market)
     # it can influence only the session that takes place the day after.
     tweets['date'] = tweets['date'].apply(lambda x: x + timedelta(days=1) if x.hour > 20 else x)
+    # Show if and how many missing values are present. It is possible to see that there are not missing elements.
+    # Otherwise it would be necessary to operate some procedure to delete or replace them.
+    print(count_missing_values(tweets))
+    # Clean the text of the tweet
+    tweets['tweet'] = tweets['tweet'].apply(clean_tweets)
+    analysis = function_dict[analysis]
+    tweets = analysis(tweets, like_weight, reply_weight, retweet_weight, target_column='tweet')
+    # todo remove
+    to_pickle(tweets, f'{analysis}.pkl')
+    return tweets
 
-    # sentiment results weighted
-    # group by
-    # return the dataframe
-    a = tweets.groupby([tweets['date'].dt.date])
 
-    missing = count_missing_values(tweets)
-    print(missing)
+
+
 
 
 

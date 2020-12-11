@@ -3,7 +3,8 @@ from Modules.config import *
 from pandas import read_pickle
 import os
 from Modules.twitter_data import tweet_preprocessing
-from Modules.stock_data import time_series_preprocessing
+# from Modules.stock_data import time_series_preprocessing
+
 
 # STOCK DATA ACQUISITION ===============================================================================================
 # If the datasets are not directly provided from the beginning there are two possibilities:
@@ -12,7 +13,7 @@ from Modules.stock_data import time_series_preprocessing
 # todo Before processing use cloud database vedi oracle
 
 # Once the datasets are locally available load the dataframes related to every pkl file.
-# todo so far inidcators are not considered
+# todo so far indicators are not considered
 time_series_dir = os.path.join(base_dir, 'Time_series.pkl')
 tweets_dir = os.path.join(base_dir, 'MSFT_twitter.pkl')
 news_dir = os.path.join(base_dir, 'News_twitted.pkl')
@@ -29,4 +30,4 @@ news_dir = os.path.join(base_dir, 'News_twitted.pkl')
 # and (3) transform your data (e.g., using normalization, dimensionality reduction, etc.).
 
 # time_series_preprocessing(time_series_dir)
-tweet_preprocessing(tweets_dir)
+tweets = tweet_preprocessing(tweets_dir, analysis='vader', like_weight=0, reply_weight=0, retweet_weight=0)
