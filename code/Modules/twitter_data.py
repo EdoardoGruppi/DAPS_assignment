@@ -2,12 +2,11 @@
 import twint
 from Modules.config import *
 import os
-from Modules.utilities import csv2pickle, count_missing_values
+from Modules.utilities import csv2pickle
 from pandas import read_pickle
 from datetime import datetime, timedelta
 import re
 from Modules.sentiment_analysis import flair_analysis, vader_analysis
-from pandas import to_pickle
 
 
 def set_query(words='', hashtag=None, mention=None, username=None, lang=None, until=None, since=None, replies=False,
@@ -81,7 +80,7 @@ def get_tweets(query, hide=True, store=True, filename='Tweets'):
 
 
 def clean_tweets(tweet):
-    # todo improve the cleaning
+    # todo improve the cleaning, tweet con una sola parola
     # Sub method replaces anything matching.
     # Delete all the https (and http) links that appear within the text.
     tweet = re.sub(r"(http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*,\\])+)", '', tweet)
@@ -90,7 +89,7 @@ def clean_tweets(tweet):
     tweet = re.sub(r"(?i)[@#][a-z0-9_]+", '', tweet)
     # Same for cashtags.
     tweet = re.sub(r"(?i)\$Msft", 'Microsoft', tweet)
-    tweet = re.sub(r"(?i)\$[a-z0-9_]+", '', tweet)
+    tweet = re.sub(r"(?i)\$[a-z]+", '', tweet)
     # Reduce the whitespaces between two words to only one.
     tweet = re.sub(r"\s+", ' ', tweet)
     return tweet
@@ -108,20 +107,24 @@ def tweet_preprocessing(df_path, analysis='vader', like_weight=0, reply_weight=0
     # If the message is twitted after the 21:00 pm in London (16:00 pm in NewYork - closing time of the nasdaq market)
     # it can influence only the session that takes place the day after.
     tweets['date'] = tweets['date'].apply(lambda x: x + timedelta(days=1) if x.hour > 20 else x)
-    # Show if and how many missing values are present. It is possible to see that there are not missing elements.
-    # Otherwise it would be necessary to operate some procedure to delete or replace them.
-    print(count_missing_values(tweets))
     # Clean the text of the tweet
     tweets['tweet'] = tweets['tweet'].apply(clean_tweets)
+    # Apply the analysis function selected
     analysis = function_dict[analysis]
     tweets = analysis(tweets, like_weight, reply_weight, retweet_weight, target_column='tweet')
-    # todo remove
-    to_pickle(tweets, f'{analysis}.pkl')
     return tweets
 
 
-
-
-
-
-
+# # todo remove
+# from nltk.sentiment.vader import SentimentIntensityAnalyzer
+# from nltk import download
+# import flair
+# download('vader_lexicon')
+# sentiment_model = SentimentIntensityAnalyzer()
+# model2 = flair.models.TextClassifier.load('en-sentiment')
+# # todo remove
+# vader = sentiment_model.polarity_scores(tweet)['compound']
+# tweet = flair.data.Sentence(tweet)
+# model2.predict(tweet)
+# fla_value = tweet.labels[0].score
+# fla_sent = tweet.labels[0].value

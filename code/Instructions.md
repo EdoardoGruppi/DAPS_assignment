@@ -26,6 +26,15 @@ torch.zeros(1).cuda()
 ```
 pip install flair
 ```
+4. Install mplfinance from pip, not from conda
+```
+pip install statsmodels
+```
+
+5. install statsmodels
+```
+pip install statsmodels
+```
 ## Run the code
 
 Once all the necessary packages have been installed you can run the code by typing this line on the terminal.
@@ -35,6 +44,8 @@ Once all the necessary packages have been installed you can run the code by typi
 ```
 python main.py
 ```
+
+
 
 ## Datasets
 
