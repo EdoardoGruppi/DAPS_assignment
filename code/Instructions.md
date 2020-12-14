@@ -35,6 +35,11 @@ pip install statsmodels
 ```
 pip install statsmodels
 ```
+6. pip install pystan
+pip install fbprophet or
+conda install -c conda-forge fbprophet
+
+7. pip install pyod
 ## Run the code
 
 Once all the necessary packages have been installed you can run the code by typing this line on the terminal.

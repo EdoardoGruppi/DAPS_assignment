@@ -3,7 +3,7 @@ import twint
 from Modules.config import *
 import os
 from Modules.utilities import csv2pickle
-from pandas import read_pickle
+from pandas import read_pickle, to_pickle
 from datetime import datetime, timedelta
 import re
 from Modules.sentiment_analysis import flair_analysis, vader_analysis
@@ -110,9 +110,11 @@ def tweet_preprocessing(df_path, analysis='vader', like_weight=0, reply_weight=0
     # Clean the text of the tweet
     tweets['tweet'] = tweets['tweet'].apply(clean_tweets)
     # Apply the analysis function selected
-    analysis = function_dict[analysis]
-    tweets = analysis(tweets, like_weight, reply_weight, retweet_weight, target_column='tweet')
-    return tweets
+    function = function_dict[analysis]
+    tweets = function(tweets, like_weight, reply_weight, retweet_weight, target_column='tweet')
+    tweets_dir = os.path.join(base_dir, f'{company}_twitter_{analysis}.pkl')
+    to_pickle(tweets, tweets_dir)
+    return tweets_dir
 
 
 # # todo remove

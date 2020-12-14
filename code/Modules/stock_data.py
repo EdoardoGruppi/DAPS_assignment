@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 from pandas import to_pickle, DataFrame, read_pickle
 import os
 import seaborn as sn
-from Modules.utilities import ohlc_chart, detect_univariate_outlier
+from Modules.utilities import detect_univariate_outlier, multivariate_visualization, detect_multivariate_outlier
 
 
 def get_daily_time_series():
@@ -77,20 +77,23 @@ def get_multiple_indicators(indicators, time_period=20):
     return data_directory
 
 
-def time_series_preprocessing(df_path, method='linear'):
+def time_series_preprocessing(df_path, method='linear', cap='', nan=False):
     time_series = read_pickle(df_path)
-    # Discard some columns that are not necessary: close, dividend amounts and split. In particular, adjusted close
+    # Discard some columns that are not necessary like close, dividend amounts and split. In particular, adjusted close
     # is usually used to estimate historical correlation and volatility of companies stocks. The adjusted
     # closing price analyses the stock's dividends, stock splits and new stock offerings to determine an adjusted value.
     # Hence, it encapsulates the values of the close, dividend amounts and split columns while considering also the
     # new offerings that a company could make altering the stock values.
+    # Plot relationships between the features. Strongly correlated features may be represented by only 1 of them.
+    # todo -- multivariate_visualization(time_series.drop(['7. dividend amount', '8. split coefficient'], axis=1))
     time_series = time_series[['5. adjusted close', '6. volume']]
     # Change name columns. This will be useful if plots are required.
     time_series = time_series.rename(columns={'5. adjusted close': 'Close', '6. volume': 'Volume'})
+    # Treat outliers
+    # todo -- detect_univariate_outlier(time_series, cap=cap, nan=nan)
+    # todo -- outliers_index = detect_multivariate_outlier(time_series, clf='iforest')
     # Add the missing days that are not considered since the stock market is closed during the weekends and the holidays
     time_series = time_series.asfreq('D')
     # Interpolate to substitute each NaN with a likely value
     time_series = time_series.interpolate(method=method)
-    # todo Outliers return detect multivariate and change, remove or cap them?
-    a, b = detect_univariate_outlier(time_series)
     return time_series
