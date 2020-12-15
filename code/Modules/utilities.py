@@ -2,14 +2,15 @@
 import matplotlib.pyplot as plt
 import seaborn as sn
 import os
-from pandas import read_csv, read_pickle, DataFrame, concat
+from pandas import read_csv, read_pickle, DataFrame, concat, Series
 from Modules.config import *
 import mplfinance as mpf
 from statsmodels.tsa.seasonal import seasonal_decompose
+from statsmodels.tsa.stattools import adfuller
 from scipy import stats
 import numpy as np
 import pylab
-from sklearn.preprocessing import StandardScaler
+from sklearn.preprocessing import MinMaxScaler, StandardScaler
 from sklearn.decomposition import PCA, KernelPCA
 from sklearn.manifold import TSNE
 from pyod.models import feature_bagging, hbos, iforest, knn, mcd
@@ -104,7 +105,8 @@ def transform_dataset(train, valid, test, algorithm='pca', n_components=2, kerne
     train_data = train.drop(['Close'], axis=1)
     valid_data = valid.drop(['Close'], axis=1)
     test_data = test.drop(['Close'], axis=1)
-    scaler = StandardScaler()
+    scaler = MinMaxScaler()
+    columns = train_data.columns
     train_data = scaler.fit_transform(train_data)
     valid_data = scaler.transform(valid_data)
     test_data = scaler.transform(test_data)
@@ -127,9 +129,13 @@ def metrics(y, yhat):
     mse_f = np.mean(d ** 2)
     mae_f = np.mean(abs(d))
     rmse_f = np.sqrt(mse_f)
+    mape = np.mean(np.abs(yhat - y) / np.abs(y))
+    mpe = np.mean((yhat - y) / y)
+    corr = np.corrcoef(yhat, y)[0, 1]
     r2_f = 1 - (sum(d ** 2) / sum((y - np.mean(y)) ** 2))
     print("Results by manual calculation:\n",
-          f'MAE: {mae_f:.4f} - MSE: {mse_f:.4f} - RMSE: {rmse_f:.4f} - R2: {r2_f:.4f}')
+          f'MAE: {mae_f:.4f} - MSE: {mse_f:.4f} - RMSE: {rmse_f:.4f} - R2: {r2_f:.4f}\n',
+          f'MAPE: {mape:.4f} - MPE: {mpe:.4f} - CORR: {corr:.4f}')
 
 
 def residuals(y, yhat):
@@ -144,6 +150,17 @@ def residuals(y, yhat):
     sn.displot(residual, kde='True')
     print(f'Residual information: \nMean: {mean} - Median: {median} - Skewness: {skew}')
     plt.show()
+
+
+def check_stationarity(time_series):
+    # Perform Dickey-Fuller test:
+    # The null hypothesis (p-value > 0.05) for this test is that the data is not stationary.
+    print('Results of Dickey-Fuller Test:')
+    df_test = adfuller(time_series, autolag='AIC')
+    df_output = Series(df_test[0:4], index=['Test Statistic', 'p-value', '#Lags Used', 'Number of Observations Used'])
+    for key, value in Series(df_test)[4].items():
+        df_output[f'Critical Value (%{key:s})'] = value
+    print(df_output)
 
 
 def check_normal_distribution(data):
@@ -166,15 +183,11 @@ def ohlc_chart(data, start=starting_date, end=ending_date, candle_size='W', volu
     mpf.show()
 
 
-def decompose_series(series, period=30):
+def decompose_series(series, period=None, mode='multiplicative', fig_width=15):
     sn.set()
-    result = seasonal_decompose(series.values, model='multiplicative', period=period)
-    result_2 = seasonal_decompose(series.values, model='additive', period=period)
-    result.plot()
-    print(f'Multiplicative: [mean: {result.seasonal.mean()}, max:{result.seasonal.max()}, min:{result.seasonal.min()}]')
-    plt.show()
-    result_2.plot()
-    print(f'Additive: [mean: {result_2.seasonal.mean()}, max:{result_2.seasonal.max()}, min:{result_2.seasonal.min()}]')
+    result = seasonal_decompose(series, model=mode, period=period)
+    result.plot().set_figwidth(fig_width)
+    print(f'{mode}: [mean: {result.seasonal.mean()}, max:{result.seasonal.max()}, min:{result.seasonal.min()}]')
     plt.show()
 
 
@@ -215,3 +228,4 @@ def pickle2csv(filename, remove=False):
     dataframe_path = os.path.join(base_dir, filename)
     df.to_csv(dataframe_path)
     return dataframe_path
+

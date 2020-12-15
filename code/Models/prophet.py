@@ -4,35 +4,35 @@ import matplotlib.pyplot as plt
 import seaborn as sn
 from pandas import to_datetime, concat, DataFrame
 from Modules.config import *
-from Modules.utilities import metrics, residuals
+from Modules.utilities import metrics, residuals, decompose_series
 
 
 # fbprophet implements models a time-series as the sum (or multiplication) of different components (trends,
 # periodic components, holidays and special events) allowing to incorporate additional regressors taken from outer
 # sources. The main reference is Taylor and Letham, 2017
-def prophet_predictions(train, test, validation=True, periods=31, regressor=True):
+def prophet_predictions(train, test, regressor=True, mode='multiplicative', exogenous=None):
     data = prepare_data(train, 'Close')
-    additional_info = DataFrame()
-    model = Prophet(seasonality_mode='multiplicative', yearly_seasonality=True, weekly_seasonality=True,
-                    daily_seasonality=True, interval_width=0.95)
+    decompose_series(train['Close'], mode=mode)
+    # From the decomposition it is possible to note that the seasonality in the training data occurs weekly.
+    model = Prophet(seasonality_mode=mode, yearly_seasonality=False, weekly_seasonality=True,
+                    daily_seasonality=False, interval_width=0.95)
     if regressor:
-        for column in train:
-            if column != 'Close':
-                model.add_regressor(column)
-                additional_info[column] = concat([train[column], test[column]])
+        columns = [col for col in train.columns if col != 'Close']
+        exogenous = concat([train[columns], test[columns]])
+        for col in columns:
+            model.add_regressor(col)
     model.fit(data)
     # We need to specify the number of days in future
-    if validation:
-        periods = test.shape[0]
+    periods = test.shape[0]
     future = model.make_future_dataframe(periods=periods, freq='1D')
     if regressor:
-        additional_info = additional_info.reset_index().rename(columns={'date': 'ds'}).drop('ds', axis=1)
-        future = concat([future, additional_info], axis=1)
+        exogenous = exogenous.reset_index().rename(columns={'date': 'ds'}).drop('ds', axis=1)
+        future = concat([future, exogenous], axis=1)
     forecast = model.predict(future)
     sn.set()
     model.plot_components(forecast)
     plt.show()
-    results = prophet_results(forecast, train, test)
+    prophet_results(forecast, train, test)
 
 
 def prepare_data(data, target_feature):
@@ -81,4 +81,3 @@ def prophet_results(forecast, data_train, data_test):
 
     metrics(test.y, test.yhat)
     residuals(test.y, test.yhat)
-    return forecast

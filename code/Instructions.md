@@ -40,6 +40,8 @@ pip install fbprophet or
 conda install -c conda-forge fbprophet
 
 7. pip install pyod
+8. pip install pmdarima
+9. pip install covid19dh
 ## Run the code
 
 Once all the necessary packages have been installed you can run the code by typing this line on the terminal.
