@@ -117,14 +117,14 @@ def tweet_preprocessing(df_path, analysis='vader', like_weight=0, reply_weight=0
     return tweets_dir
 
 
-# # todo remove
+# todo remove
 # from nltk.sentiment.vader import SentimentIntensityAnalyzer
 # from nltk import download
 # import flair
 # download('vader_lexicon')
 # sentiment_model = SentimentIntensityAnalyzer()
 # model2 = flair.models.TextClassifier.load('en-sentiment')
-# # todo remove
+#
 # vader = sentiment_model.polarity_scores(tweet)['compound']
 # tweet = flair.data.Sentence(tweet)
 # model2.predict(tweet)

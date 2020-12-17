@@ -77,8 +77,9 @@ def get_multiple_indicators(indicators, time_period=20):
     return data_directory
 
 
-def time_series_preprocessing(df_path, method='linear', cap='', nan=False):
-    time_series = read_pickle(df_path)
+def time_series_preprocessing(time_series, method='linear', cap='', nan=False, path=True):
+    if path:
+        time_series = read_pickle(time_series)
     # Discard some columns that are not necessary like close, dividend amounts and split. In particular, adjusted close
     # is usually used to estimate historical correlation and volatility of companies stocks. The adjusted
     # closing price analyses the stock's dividends, stock splits and new stock offerings to determine an adjusted value.

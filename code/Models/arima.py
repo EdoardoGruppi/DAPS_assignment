@@ -1,10 +1,10 @@
 # Import packages
 from Modules.utilities import decompose_series, check_stationarity
-from pmdarima.arima import auto_arima
+from pmdarima.arima import auto_arima, ndiffs, nsdiffs
 from pandas import DataFrame, concat
 import seaborn as sn
 import matplotlib.pyplot as plt
-from Modules.utilities import metrics, residuals
+from Modules.utilities import metrics, residuals_properties
 import numpy as np
 
 
@@ -16,27 +16,26 @@ import numpy as np
 # To find the optimal parameters two approaches: grid-search algorithm or de-trending and differencing until the adf
 # test allows to reject the null hypothesis.
 def arima_predictions(train, test, regressor=True, mode='multiplicative', exog_train=None, exog_test=None):
-    decompose_series(train['Close'], mode=mode)
-    check_stationarity(train['Close'])
+    # todo -- decompose_series(train['Close'], mode=mode)
+    # todo -- check_stationarity(train['Close'])
     if regressor:
         columns = [col for col in train.columns if col != 'Close']
         exog_train = train[columns]
         exog_test = test[columns]
     # auto_arima function allows to set a range of p,d,q,P,D,and Q values and then fit models for all the possible
-    # combinations. Then the model will keep the combination that reported back the best AIC value.
+    # combinations. Then the model will keep the combination that reported back the best (lower) AIC value.
     # m = 7 means daily seasonality, 12 monthly seasonality, 52 weekly seasonality
-    model = auto_arima(y=train['Close'], X=exog_train, start_p=1, start_q=1, m=12, start_P=0, seasonal=True, trace=True,
+    # Arima differences both the y variable and the exogenous variables as specified in the arguments.
+    model = auto_arima(y=train['Close'], X=exog_train, start_p=1, start_q=1, m=52, seasonal=True, trace=True,
                        error_action='ignore', suppress_warnings=True, stepwise=True)
     print(model.summary())
     # We need to specify the number of days in future
     periods = test.shape[0]
     results, conf = model.predict(X=exog_test, n_periods=periods, return_conf_int=True)
-    model.plot_diagnostics(lags=7, figsize=(8, 8))
-    plt.show()
-    arima_results(results, conf, train, test)
+    arima_results(results, conf, train, test, model.resid())
 
 
-def arima_results(results, conf, data_train, data_test):
+def arima_results(results, conf, data_train, data_test, residual):
     results = results.reshape(-1, 1)
     results = np.concatenate((results, conf), axis=1)
     results = DataFrame(results, columns=['y_hat', 'y_hat_lower', 'y_hat_upper'])
@@ -56,11 +55,24 @@ def arima_results(results, conf, data_train, data_test):
     ax.axvline(results.head(1).index, color='k', ls='--', alpha=0.7)
     plt.show()
 
+    # Plot comparison focusing on the days predicted
+    sn.set()
+    f, ax = plt.subplots(figsize=(12, 6))
+    # The plot will display the last part of the series
+    samples = data_test.shape[0] * 5
+    ax.plot(data_train.tail(samples).index, data_train.tail(samples).Close, marker='o', markersize=4, color='k')
+    ax.plot(results.index, results.y, marker='o', markersize=4, color='r')
+    ax.plot(results.index, results.y_hat, color='coral', lw=2)
+    ax.fill_between(results.index, results.y_hat_lower, results.y_hat_upper, color='coral', alpha=0.3)
+    ax.axvline(results.head(1).index, color='k', ls='--', alpha=0.7)
+    plt.show()
+
     # Joint plot
     sn.jointplot(x='y_hat', y='y', data=results, kind="reg", color="b")
     plt.xlabel('Predictions')
     plt.ylabel('Observations')
     plt.show()
 
+    residuals_properties(residual)
     metrics(results.y, results.y_hat)
-    residuals(results.y, results.y_hat)
+

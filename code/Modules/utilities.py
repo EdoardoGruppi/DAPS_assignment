@@ -6,7 +6,9 @@ from pandas import read_csv, read_pickle, DataFrame, concat, Series
 from Modules.config import *
 import mplfinance as mpf
 from statsmodels.tsa.seasonal import seasonal_decompose
-from statsmodels.tsa.stattools import adfuller
+from statsmodels.tsa.stattools import adfuller, grangercausalitytests
+from statsmodels.graphics.tsaplots import plot_acf, plot_pacf
+from statsmodels.api import qqplot
 from scipy import stats
 import numpy as np
 import pylab
@@ -89,13 +91,35 @@ def detect_multivariate_outlier(data, clf='iforest', contamination=0.03):
     return data.index[index]
 
 
-def dataset_division(dataframe, valid_size=0.2):
+def dataset_division(dataframe, valid_size=30, percentage=False):
     train = dataframe.loc[starting_date:ending_date]
-    train_samples = round(train.shape[0] * (1 - valid_size))
+    if percentage:
+        train_samples = round(train.shape[0] * (1 - valid_size))
+    else:
+        train_samples = train.shape[0] - valid_size
     valid = train.iloc[train_samples:, :]
     train = train.iloc[:train_samples, :]
     test = dataframe.loc[starting_test_period:ending_test_period]
     return train, valid, test
+
+
+def combine_dataset(datasets):
+    dataframe = DataFrame()
+    for dataset in datasets:
+        dataframe = dataframe.join(dataset, how='outer')
+    dataframe = dataframe[starting_date:ending_test_period]
+    dataframe = dataframe.fillna(0)
+    return dataframe
+
+
+def shift_dataset(dataset, column='Close'):
+    # Shift the columns so that the values of the previous day can be used to predict the next day.
+    # Time-series shifted is needed due to how fbprophet and arima make predictions.
+    columns = [col for col in dataset.columns if col != column]
+    dataset[columns] = dataset[columns].shift(1)
+    # Fill the new Nan in the first line
+    dataset = dataset.bfill()
+    return dataset
 
 
 def transform_dataset(train, valid, test, algorithm='pca', n_components=2, kernel='rbf', perplexity=5):
@@ -106,7 +130,6 @@ def transform_dataset(train, valid, test, algorithm='pca', n_components=2, kerne
     valid_data = valid.drop(['Close'], axis=1)
     test_data = test.drop(['Close'], axis=1)
     scaler = MinMaxScaler()
-    columns = train_data.columns
     train_data = scaler.fit_transform(train_data)
     valid_data = scaler.transform(valid_data)
     test_data = scaler.transform(test_data)
@@ -124,31 +147,52 @@ def transform_dataset(train, valid, test, algorithm='pca', n_components=2, kerne
     return train, valid, test
 
 
-def metrics(y, yhat):
-    d = y - yhat
+def metrics(y, y_hat):
+    d = y - y_hat
     mse_f = np.mean(d ** 2)
     mae_f = np.mean(abs(d))
     rmse_f = np.sqrt(mse_f)
-    mape = np.mean(np.abs(yhat - y) / np.abs(y))
-    mpe = np.mean((yhat - y) / y)
-    corr = np.corrcoef(yhat, y)[0, 1]
+    mape = np.mean(np.abs(y_hat - y) / np.abs(y))
+    mpe = np.mean((y_hat - y) / y)
+    corr = np.corrcoef(y_hat, y)[0, 1]
     r2_f = 1 - (sum(d ** 2) / sum((y - np.mean(y)) ** 2))
-    print("Results by manual calculation:\n",
-          f'MAE: {mae_f:.4f} - MSE: {mse_f:.4f} - RMSE: {rmse_f:.4f} - R2: {r2_f:.4f}\n',
-          f'MAPE: {mape:.4f} - MPE: {mpe:.4f} - CORR: {corr:.4f}')
+    print('\nResults by manual calculation:\n',
+          f'- MAE: {mae_f:.4f} \n - MSE: {mse_f:.4f} \n - RMSE: {rmse_f:.4f} \n - R2: {r2_f:.4f}\n',
+          f'- MAPE: {mape:.4f} \n - MPE: {mpe:.4f} \n - CORR: {corr:.4f}')
 
 
-def residuals(y, yhat):
-    residual = y - yhat
-    mean = residual.mean()
-    median = residual.median()
+def residuals_properties(residuals):
+    # The residuals in a time series model are what is left over after fitting a model.
+    residuals = residuals[1:]
+    mean = residuals.mean()
+    median = residuals.median()
     # skewness = 0 : normally distributed.
     # skewness > 0 : more weight in the left tail of the distribution. Long right tail. Median before mean.
     # skewness < 0 : more weight in the right tail of the distribution. Long left tail. Median after mean.
-    skew = stats.skew(residual)
+    skew = stats.skew(residuals)
+    print(f'\nResidual information:\n - Mean: {mean:.4f} \n - Median: {median:.4f} \n - Skewness: {skew:.4f}')
     sn.set()
-    sn.displot(residual, kde='True')
-    print(f'Residual information: \nMean: {mean} - Median: {median} - Skewness: {skew}')
+    fig, axes = plt.subplots(1, 4, figsize=(22, 5))
+    residuals = (residuals - np.nanmean(residuals)) / np.nanstd(residuals)
+    # First picture
+    residuals_non_missing = residuals[~(np.isnan(residuals))]
+    qqplot(residuals_non_missing, line='s', ax=axes[0])
+    axes[0].set_title('Normal Q-Q')
+    # Second picture
+    x = np.arange(0, len(residuals), 1)
+    sn.lineplot(x=x, y=residuals, ax=axes[1])
+    axes[1].set_title('Standardized residual')
+    # Third picture
+    kde = stats.gaussian_kde(residuals_non_missing)
+    x_lim = (-1.96 * 2, 1.96 * 2)
+    x = np.linspace(x_lim[0], x_lim[1])
+    axes[2].plot(x, stats.norm.pdf(x), label='Normal (0,1)', lw=2)
+    axes[2].plot(x, kde(x), label='Residuals', lw=2)
+    axes[2].set_xlim(x_lim)
+    axes[2].legend()
+    axes[2].set_title('Histogram plus estimated density')
+    # Last picture
+    plot_acf(residuals, ax=axes[3], lags=7)
     plt.show()
 
 
@@ -170,6 +214,26 @@ def check_normal_distribution(data):
     plt.show()
     stats.probplot(data, dist="norm", plot=pylab)
     pylab.show()
+
+
+def plot_auto_correlation(series):
+    sn.set()
+    fig, axes = plt.subplots(1, 2, sharey='all', figsize=(13, 5))
+    plot_acf(series, ax=axes[0])
+    plot_pacf(series, ax=axes[1])
+    plt.show()
+
+
+def granger_test(dataframe, columns, max_lag=7, alpha_value=0.05, test='ssr_ftest'):
+    # Null hypothesis: the time series in the second column, x2, does NOT Granger cause the time series in the first
+    # column, x1. Grange causality means that past values of x2 have a statistically significant effect on the current
+    # value of x1.
+    dictionary = grangercausalitytests(dataframe[columns], maxlag=max_lag)
+    print(f'\n Null hypothesis rejected in lags: ')
+    counter = 0
+    for item in dictionary.values():
+        counter += 1
+        print(f'Lags number {counter}: {item[0][test][1] <= alpha_value}')
 
 
 def ohlc_chart(data, start=starting_date, end=ending_date, candle_size='W', volume=False):
@@ -228,4 +292,3 @@ def pickle2csv(filename, remove=False):
     dataframe_path = os.path.join(base_dir, filename)
     df.to_csv(dataframe_path)
     return dataframe_path
-
