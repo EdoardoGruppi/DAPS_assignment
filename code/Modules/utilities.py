@@ -122,7 +122,7 @@ def shift_dataset(dataset, column='Close'):
     return dataset
 
 
-def transform_dataset(train, valid, test, algorithm='pca', n_components=2, kernel='rbf', perplexity=5):
+def transform_dataset(train, valid, test, algorithm='pca', n_components=2, kernel='rbf', perplexity=5, reduction=True):
     function = {'pca': PCA(n_components=n_components),
                 'kernel_pca': KernelPCA(n_components=n_components, kernel=kernel),
                 'tsne': TSNE(n_components=n_components, init='random', random_state=0, perplexity=perplexity)}
@@ -134,10 +134,11 @@ def transform_dataset(train, valid, test, algorithm='pca', n_components=2, kerne
     valid_data = scaler.transform(valid_data)
     test_data = scaler.transform(test_data)
     # Apply dimension reduction
-    model = function[algorithm]
-    train_data = model.fit_transform(train_data)
-    valid_data = model.transform(valid_data)
-    test_data = model.transform(test_data)
+    if reduction:
+        model = function[algorithm]
+        train_data = model.fit_transform(train_data)
+        valid_data = model.transform(valid_data)
+        test_data = model.transform(test_data)
     train = concat([DataFrame(train_data, index=train.index), train['Close']], axis=1)
     valid = concat([DataFrame(valid_data, index=valid.index), valid['Close']], axis=1)
     test = concat([DataFrame(test_data, index=test.index), test['Close']], axis=1)
@@ -157,8 +158,8 @@ def metrics(y, y_hat):
     corr = np.corrcoef(y_hat, y)[0, 1]
     r2_f = 1 - (sum(d ** 2) / sum((y - np.mean(y)) ** 2))
     print('\nResults by manual calculation:\n',
-          f'- MAE: {mae_f:.4f} \n - MSE: {mse_f:.4f} \n - RMSE: {rmse_f:.4f} \n - R2: {r2_f:.4f}\n',
-          f'- MAPE: {mape:.4f} \n - MPE: {mpe:.4f} \n - CORR: {corr:.4f}')
+          f'- MAPE: {mape:.4f} \n - RMSE: {rmse_f:.4f} \n - CORR: {corr:.4f} \n - R2: {r2_f:.4f}\n',
+          f'- MAE: {mae_f:.4f} \n - MPE: {mpe:.4f} \n - MSE: {mse_f:.4f}')
 
 
 def residuals_properties(residuals):
@@ -170,7 +171,9 @@ def residuals_properties(residuals):
     # skewness > 0 : more weight in the left tail of the distribution. Long right tail. Median before mean.
     # skewness < 0 : more weight in the right tail of the distribution. Long left tail. Median after mean.
     skew = stats.skew(residuals)
-    print(f'\nResidual information:\n - Mean: {mean:.4f} \n - Median: {median:.4f} \n - Skewness: {skew:.4f}')
+    kurtosis = stats.kurtosis(residuals)
+    print(f'\nResidual information:\n - Mean: {mean:.4f} \n - Median: {median:.4f} \n - Skewness: {skew:.4f} '
+          f'\n - Kurtosis: {kurtosis:.4f}')
     sn.set()
     fig, axes = plt.subplots(1, 4, figsize=(22, 5))
     residuals = (residuals - np.nanmean(residuals)) / np.nanstd(residuals)
@@ -193,6 +196,25 @@ def residuals_properties(residuals):
     axes[2].set_title('Histogram plus estimated density')
     # Last picture
     plot_acf(residuals, ax=axes[3], lags=7)
+    plt.show()
+
+
+# todo change code
+def detect_seasonality(time_series, column):
+    dataframe = time_series.copy()
+    dataframe['year'] = dataframe.index.year
+    dataframe['month'] = dataframe.index.month
+    dataframe['day'] = dataframe.index.day
+    dataframe['weekday'] = dataframe.index.weekday
+    sn.set()
+    fig, axes = plt.subplots(1, 3, figsize=(23, 5), gridspec_kw={'width_ratios': [1, 3, 3]})
+    sn.lineplot(data=dataframe, x='month', y=column, hue='year', legend='full', ax=axes[0])
+    axes[0].set_title('Yearly seasonality plot')
+    sn.lineplot(data=dataframe, x='day', y=column, hue='month', legend='full', ci=None, ax=axes[1])
+    axes[1].set_title('Monthly seasonality plot')
+    sn.lineplot(data=dataframe, x='weekday', y=column, hue='month', legend='full', style_order='month', ci=None, ax=axes[2])
+    axes[2].set_title('Weekly seasonality plot')
+    plt.legend()
     plt.show()
 
 

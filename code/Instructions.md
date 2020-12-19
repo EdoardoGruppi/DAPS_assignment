@@ -42,6 +42,9 @@ conda install -c conda-forge fbprophet
 7. pip install pyod
 8. pip install pmdarima
 9. pip install covid19dh
+10. breaks fbprophet holiday
+    conda install -c conda-forge fbprophet will install the last version with the bug fixed
+    conda install -c conda-forge pystan
 ## Run the code
 
 Once all the necessary packages have been installed you can run the code by typing this line on the terminal.

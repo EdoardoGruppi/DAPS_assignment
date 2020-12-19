@@ -4,6 +4,7 @@ from pandas import DataFrame, to_pickle, read_pickle
 import os
 from Modules.config import *
 from datetime import datetime
+import numpy as np
 
 
 def get_covid_data():
@@ -21,4 +22,12 @@ def covid_preprocessing(df_path):
     dataframe.index = dataframe['date'].apply(lambda x: datetime.strptime(str(x), "%Y-%m-%d %H:%M:%S"))
     dataframe = dataframe.drop(['date'], axis=1)
     dataframe = dataframe.groupby(level=0).sum()
+
+    # Considering only the active cases
+    dataframe['active'] = dataframe.confirmed - dataframe.recovered - dataframe.deaths
+    dataframe = dataframe.drop(['confirmed', 'deaths', 'recovered'], axis=1)
+
+    # Considering the daily movement percentage of the active cases
+    dataframe['daily_change'] = dataframe.active.pct_change(periods=1).fillna(0)
+    dataframe.daily_change = dataframe.daily_change.replace(np.inf, 1)
     return dataframe

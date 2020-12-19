@@ -12,13 +12,14 @@ from Modules.utilities import metrics, decompose_series, residuals_properties
 # sources. The main reference is Taylor and Letham, 2017.
 # Models parameters explained in the source code: https://bit.ly/3p6Ek5n
 def prophet_predictions(train, test, regressor=True, mode='multiplicative', exogenous=None, holidays=False, sps=10.0,
-                        cps=0.10, yearly=False, weekly=True, interval=0.95, daily=False):
+                        cps=0.10,interval=0.95, n_change_points=25):
     data = prepare_data(train, 'Close')
-    # todo -- decompose_series(train['Close'], mode=mode)
+    decompose_series(train['Close'], mode=mode)
     # From the decomposition it is possible to note that the seasonality in the training data occurs weekly.
-    model = Prophet(seasonality_mode=mode, yearly_seasonality=yearly, weekly_seasonality=weekly,
-                    interval_width=interval, daily_seasonality=daily, seasonality_prior_scale=sps,
-                    changepoint_prior_scale=cps)
+    model = Prophet(seasonality_mode=mode, yearly_seasonality=False, weekly_seasonality=False,
+                    interval_width=interval, daily_seasonality=False, seasonality_prior_scale=sps,
+                    changepoint_prior_scale=cps, n_changepoints=n_change_points)
+    model.add_seasonality(name='yearly', period=365, fourier_order=20, prior_scale=15)
     if holidays:
         model.add_country_holidays(country_name='US')
     if regressor:

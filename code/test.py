@@ -9,7 +9,6 @@ from Models.prophet import prophet_predictions
 from Models.arima import arima_predictions
 from Modules.covid_data import covid_preprocessing
 
-
 # STOCK DATA ACQUISITION AND STORAGE ===================================================================================
 # If the datasets are not directly provided from the beginning there are two possibilities:
 # 1. run the data_gatherer.py from the terminal
@@ -35,19 +34,24 @@ covid = covid_preprocessing(covid_dir)
 # tweets_dir = os.path.join(base_dir, f'MSFT_twitter_vader.pkl')
 # tweets = read_pickle(tweets_dir)
 
+detect_seasonality(time_series, 'Close')
+
 dataframe = combine_dataset([time_series, covid])
 # granger_test(dataframe, ['Close', 'Volume'])
 dataframe = shift_dataset(dataframe)
 train, valid, test = dataset_division(dataframe)
-# train, valid, test = transform_dataset(train, valid, test, algorithm='pca', n_components=1, kernel='rbf')
+train, valid, test = transform_dataset(train, valid, test, algorithm='pca', n_components=1, kernel='rbf',
+                                       reduction=False)
 
 # DATA EXPLORATION =====================================================================================================
 
 # DATA INFERENCE =======================================================================================================
-prophet_predictions(train, valid, regressor=True, mode='multiplicative', sps=10, cps=0.10, yearly=False, weekly=True,
-                    daily=False)
-# arima_predictions(train, valid, regressor=True, mode='multiplicative')
+prophet_predictions(train, valid, regressor=True, mode='multiplicative', holidays=False)
+# arima_predictions(train, valid, regressor=True)
 # The validation split is used to set all the hyper-parameters that cannot be found with grid search algorithms
-# train = concat([train, valid])
+# todo control
+# train, valid, test = dataset_division(dataframe, valid_size=0)
+# train, valid, test = transform_dataset(train, valid, test, algorithm='pca', n_components=1, kernel='rbf',
+#                                        reduction=False)
 # prophet_predictions(train, test, validation=False, mode='multiplicative')
-# arima_predictions(train, test, regressor=True, mode='multiplicative')
+# arima_predictions(train, test, regressor=True)
