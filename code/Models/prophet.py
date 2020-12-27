@@ -97,5 +97,6 @@ def prophet_results(forecast, data_train, data_test):
     # plt.xlabel('Predictions')
     # plt.ylabel('Observations')
     # plt.show()
+    # Residuals
     residuals_properties(residuals)
     metrics(test.y, test.yhat)

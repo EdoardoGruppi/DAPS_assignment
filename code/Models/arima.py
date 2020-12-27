@@ -6,8 +6,6 @@ import seaborn as sn
 import matplotlib.pyplot as plt
 from Modules.utilities import metrics, residuals_properties
 import numpy as np
-import pmdarima as pm
-from pmdarima import model_selection
 
 
 # SARIMA(p,d,q)x(P,D,Q,lag)
@@ -35,6 +33,19 @@ def arima_predictions(train, test, regressor=True, mode='multiplicative', exog_t
     periods = test.shape[0]
     results, conf = model.predict(X=exog_test, n_periods=periods, return_conf_int=True)
     arima_results(results, conf, train, test, model.resid())
+    return model
+
+
+def arima_test(model, train, test, regressor=True, exog_train=None, exog_test=None):
+    if regressor:
+        columns = [col for col in train.columns if col != 'Close']
+        exog_train = train[columns]
+        exog_test = test[columns]
+    model = model.fit(y=train['Close'], X=exog_train)
+    # We need to specify the number of days in future
+    periods = test.shape[0]
+    results, conf = model.predict(X=exog_test, n_periods=periods, return_conf_int=True)
+    arima_results(results, conf, train, test, model.resid())
 
 
 def arima_results(results, conf, data_train, data_test, residual):
@@ -46,7 +57,6 @@ def arima_results(results, conf, data_train, data_test, residual):
     results.loc[:, 'y_hat'] = results.y_hat.clip(lower=0)
     results.loc[:, 'y_hat_lower'] = results.y_hat_lower.clip(lower=0)
     results.loc[:, 'y_hat_upper'] = results.y_hat_upper.clip(lower=0)
-
     # Plot comparison between forecasting results and predictions
     sn.set()
     f, ax = plt.subplots(figsize=(14, 8))
@@ -56,7 +66,6 @@ def arima_results(results, conf, data_train, data_test, residual):
     ax.fill_between(results.index, results.y_hat_lower, results.y_hat_upper, color='coral', alpha=0.3)
     ax.axvline(results.head(1).index, color='k', ls='--', alpha=0.7)
     plt.show()
-
     # Plot comparison focusing on the days predicted
     sn.set()
     f, ax = plt.subplots(figsize=(12, 6))
@@ -68,13 +77,12 @@ def arima_results(results, conf, data_train, data_test, residual):
     ax.fill_between(results.index, results.y_hat_lower, results.y_hat_upper, color='coral', alpha=0.3)
     ax.axvline(results.head(1).index, color='k', ls='--', alpha=0.7)
     plt.show()
-
     # Joint plot
     sn.jointplot(x='y_hat', y='y', data=results, kind="reg", color="b")
     plt.xlabel('Predictions')
     plt.ylabel('Observations')
     plt.show()
-
+    # Residuals
     residuals_properties(residual)
     metrics(results.y, results.y_hat)
 
