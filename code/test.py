@@ -20,38 +20,36 @@ time_series_dir = os.path.join(base_dir, 'Time_series.pkl')
 # indicators_dir = os.path.join(base_dir, 'Indicators.pkl')
 covid_dir = os.path.join(base_dir, 'Covid.pkl')
 # tweets_dir = os.path.join(base_dir, 'MSFT_twitter.pkl')
-# news_dir = os.path.join(base_dir, 'News_twitted.pkl')
-# indicators = read_pickle(indicators_dir)
 # time_series = read_pickle(time_series_dir)
+# todo change weighted in the names of the datasets
 
 # DATA PREPROCESSING ===================================================================================================
 time_series = time_series_preprocessing(time_series=time_series_dir, path=True)
 # ohlc_chart(data=time_series, candle_size='10D', start=starting_date, end=ending_date, volume=False)
-# news_dir = tweet_preprocessing(df_path=news_dir, analysis='vader', like_weight=0, reply_weight=0, retweet_weight=0)
-# tweets_dir = tweet_preprocessing(df_path=tweets_dir, analysis='vader', like_weight=0, reply_weight=0,retweet_weight=0)
-covid = covid_preprocessing(covid_dir)
+# news_dir = tweet_preprocessing(df_path=news_dir, analysis='vader', like_weight=4, reply_weight=1, retweet_weight=8)
+# tweets_dir = tweet_preprocessing(df_path=tweets_dir, analysis='vader', like_weight=4, reply_weight=1,retweet_weight=8)
+covid = covid_preprocessing(covid_dir, daily_change=False)
 
-# tweets_dir = os.path.join(base_dir, f'MSFT_twitter_vader.pkl')
-# tweets = read_pickle(tweets_dir)
+tweets_dir = os.path.join(base_dir, f'MSFT_twitter_vader_weighted.pkl')
+tweets = read_pickle(tweets_dir)
+news_dir = os.path.join(base_dir, 'News_flair.pkl')
+news = read_pickle(news_dir)
 
-detect_seasonality(time_series, 'Close')
-
-dataframe = combine_dataset([time_series, covid])
-# granger_test(dataframe, ['Close', 'Volume'])
+news.name = 'Mood'
+dataframe = combine_dataset([time_series, covid, tweets, news])
+# granger_test(dataframe, ['Close', 'Sentiment'])
 dataframe = shift_dataset(dataframe)
 train, valid, test = dataset_division(dataframe)
 train, valid, test = transform_dataset(train, valid, test, algorithm='pca', n_components=1, kernel='rbf',
                                        reduction=False)
-
 # DATA EXPLORATION =====================================================================================================
 
+
 # DATA INFERENCE =======================================================================================================
-prophet_predictions(train, valid, regressor=True, mode='multiplicative', holidays=False)
-# arima_predictions(train, valid, regressor=True)
+# todo make class
+# prophet_predictions(train, valid, regressor=True, mode='multiplicative', holidays=True)
+arima_predictions(train, valid, regressor=True)
 # The validation split is used to set all the hyper-parameters that cannot be found with grid search algorithms
-# todo control
-# train, valid, test = dataset_division(dataframe, valid_size=0)
-# train, valid, test = transform_dataset(train, valid, test, algorithm='pca', n_components=1, kernel='rbf',
-#                                        reduction=False)
-# prophet_predictions(train, test, validation=False, mode='multiplicative')
-# arima_predictions(train, test, regressor=True)
+train = concat([train, valid])
+# prophet_predictions(train, test, regressor=True, mode='multiplicative', holidays=True)
+arima_predictions(train, test, regressor=True)

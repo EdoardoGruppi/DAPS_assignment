@@ -6,6 +6,8 @@ import seaborn as sn
 import matplotlib.pyplot as plt
 from Modules.utilities import metrics, residuals_properties
 import numpy as np
+import pmdarima as pm
+from pmdarima import model_selection
 
 
 # SARIMA(p,d,q)x(P,D,Q,lag)
@@ -75,4 +77,6 @@ def arima_results(results, conf, data_train, data_test, residual):
 
     residuals_properties(residual)
     metrics(results.y, results.y_hat)
+
+
 

@@ -7,6 +7,7 @@ from Modules.config import *
 import mplfinance as mpf
 from statsmodels.tsa.seasonal import seasonal_decompose
 from statsmodels.tsa.stattools import adfuller, grangercausalitytests
+from statsmodels.stats.stattools import durbin_watson
 from statsmodels.graphics.tsaplots import plot_acf, plot_pacf
 from statsmodels.api import qqplot
 from scipy import stats
@@ -93,11 +94,13 @@ def detect_multivariate_outlier(data, clf='iforest', contamination=0.03):
 
 def dataset_division(dataframe, valid_size=30, percentage=False):
     train = dataframe.loc[starting_date:ending_date]
+    valid = None
     if percentage:
         train_samples = round(train.shape[0] * (1 - valid_size))
     else:
         train_samples = train.shape[0] - valid_size
-    valid = train.iloc[train_samples:, :]
+    if valid_size != 0:
+        valid = train.iloc[train_samples:, :]
     train = train.iloc[:train_samples, :]
     test = dataframe.loc[starting_test_period:ending_test_period]
     return train, valid, test
@@ -172,10 +175,14 @@ def residuals_properties(residuals):
     # skewness < 0 : more weight in the right tail of the distribution. Long left tail. Median after mean.
     skew = stats.skew(residuals)
     kurtosis = stats.kurtosis(residuals)
+    # Durbin-Watson statistic equal to  2.0 means that there is no auto-correlation.
+    # Values between 0 and 2 indicate positive and values between 2 and 4 indicate negative auto-correlation.
+    durbin = durbin_watson(residuals)
+
     print(f'\nResidual information:\n - Mean: {mean:.4f} \n - Median: {median:.4f} \n - Skewness: {skew:.4f} '
-          f'\n - Kurtosis: {kurtosis:.4f}')
+          f'\n - Kurtosis: {kurtosis:.4f}\n - Durbin: {durbin:.4f}')
     sn.set()
-    fig, axes = plt.subplots(1, 4, figsize=(22, 5))
+    fig, axes = plt.subplots(1, 5, figsize=(25, 5))
     residuals = (residuals - np.nanmean(residuals)) / np.nanstd(residuals)
     # First picture
     residuals_non_missing = residuals[~(np.isnan(residuals))]
@@ -195,7 +202,8 @@ def residuals_properties(residuals):
     axes[2].legend()
     axes[2].set_title('Histogram plus estimated density')
     # Last picture
-    plot_acf(residuals, ax=axes[3], lags=7)
+    plot_acf(residuals, ax=axes[3], lags=30)
+    plot_pacf(residuals, ax=axes[4], lags=30)
     plt.show()
 
 
@@ -212,7 +220,7 @@ def detect_seasonality(time_series, column):
     axes[0].set_title('Yearly seasonality plot')
     sn.lineplot(data=dataframe, x='day', y=column, hue='month', legend='full', ci=None, ax=axes[1])
     axes[1].set_title('Monthly seasonality plot')
-    sn.lineplot(data=dataframe, x='weekday', y=column, hue='month', legend='full', style_order='month', ci=None, ax=axes[2])
+    sn.lineplot(data=dataframe, x='weekday', y=column, hue='month', legend='full', ci=None, ax=axes[2])
     axes[2].set_title('Weekly seasonality plot')
     plt.legend()
     plt.show()

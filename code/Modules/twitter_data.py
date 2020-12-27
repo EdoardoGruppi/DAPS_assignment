@@ -107,26 +107,13 @@ def tweet_preprocessing(df_path, analysis='vader', like_weight=0, reply_weight=0
     # If the message is twitted after the 21:00 pm in London (16:00 pm in NewYork - closing time of the nasdaq market)
     # it can influence only the session that takes place the day after.
     tweets['date'] = tweets['date'].apply(lambda x: x + timedelta(days=1) if x.hour > 20 else x)
+    # todo tweets = tweets.set_index('date').sort_index()
     # Clean the text of the tweet
     tweets['tweet'] = tweets['tweet'].apply(clean_tweets)
     # Apply the analysis function selected
     function = function_dict[analysis]
     tweets = function(tweets, like_weight, reply_weight, retweet_weight, target_column='tweet')
-    tweets_dir = os.path.join(base_dir, f'{company}_twitter_{analysis}.pkl')
+    name = df_path.split(os.sep)[-1].split('.')[0]
+    tweets_dir = os.path.join(base_dir, f'{name}_{analysis}.pkl')
     to_pickle(tweets, tweets_dir)
     return tweets_dir
-
-
-# todo remove
-# from nltk.sentiment.vader import SentimentIntensityAnalyzer
-# from nltk import download
-# import flair
-# download('vader_lexicon')
-# sentiment_model = SentimentIntensityAnalyzer()
-# model2 = flair.models.TextClassifier.load('en-sentiment')
-#
-# vader = sentiment_model.polarity_scores(tweet)['compound']
-# tweet = flair.data.Sentence(tweet)
-# model2.predict(tweet)
-# fla_value = tweet.labels[0].score
-# fla_sent = tweet.labels[0].value

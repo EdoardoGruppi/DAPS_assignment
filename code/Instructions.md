@@ -41,6 +41,7 @@ conda install -c conda-forge fbprophet
 
 7. pip install pyod
 8. pip install pmdarima
+   pip install pymongo
 9. pip install covid19dh
 10. breaks fbprophet holiday
     conda install -c conda-forge fbprophet will install the last version with the bug fixed

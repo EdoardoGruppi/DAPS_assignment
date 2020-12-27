@@ -2,7 +2,7 @@
 from fbprophet import Prophet
 import matplotlib.pyplot as plt
 import seaborn as sn
-from pandas import to_datetime, concat, DataFrame
+from pandas import to_datetime, concat, DataFrame, merge
 from Modules.config import *
 from Modules.utilities import metrics, decompose_series, residuals_properties
 
@@ -11,15 +11,14 @@ from Modules.utilities import metrics, decompose_series, residuals_properties
 # periodic components, holidays and special events) allowing to incorporate additional regressors taken from outer
 # sources. The main reference is Taylor and Letham, 2017.
 # Models parameters explained in the source code: https://bit.ly/3p6Ek5n
-def prophet_predictions(train, test, regressor=True, mode='multiplicative', exogenous=None, holidays=False, sps=10.0,
-                        cps=0.10,interval=0.95, n_change_points=25):
+def prophet_predictions(train, test, regressor=True, mode='multiplicative', exogenous=None, holidays=False,
+                        sps=10.0, cps=0.10, interval=0.95, n_change_points=25):
     data = prepare_data(train, 'Close')
-    decompose_series(train['Close'], mode=mode)
-    # From the decomposition it is possible to note that the seasonality in the training data occurs weekly.
+    # todo -- decompose_series(train['Close'], mode=mode)
     model = Prophet(seasonality_mode=mode, yearly_seasonality=False, weekly_seasonality=False,
                     interval_width=interval, daily_seasonality=False, seasonality_prior_scale=sps,
                     changepoint_prior_scale=cps, n_changepoints=n_change_points)
-    model.add_seasonality(name='yearly', period=365, fourier_order=20, prior_scale=15)
+    model.add_seasonality(name='two-years', period=700, fourier_order=20, prior_scale=20)
     if holidays:
         model.add_country_holidays(country_name='US')
     if regressor:
@@ -57,7 +56,6 @@ def prophet_results(forecast, data_train, data_test):
     forecast.loc[:, 'yhat'] = forecast.yhat.clip(lower=0)
     forecast.loc[:, 'yhat_lower'] = forecast.yhat_lower.clip(lower=0)
     forecast.loc[:, 'yhat_upper'] = forecast.yhat_upper.clip(lower=0)
-
     # Plot comparison between forecasting results and predictions
     sn.set()
     f, ax = plt.subplots(figsize=(14, 8))
@@ -74,7 +72,6 @@ def prophet_results(forecast, data_train, data_test):
     ax.fill_between(test.index, test.yhat_lower, test.yhat_upper, color='coral', alpha=0.3)
     ax.axvline(forecast.loc[start_test, 'ds'], color='k', ls='--', alpha=0.7)
     plt.show()
-
     # Plot comparison focusing on the days predicted
     sn.set()
     f, ax = plt.subplots(figsize=(14, 8))
@@ -91,16 +88,14 @@ def prophet_results(forecast, data_train, data_test):
     ax.fill_between(test.index, test.yhat_lower, test.yhat_upper, color='coral', alpha=0.3)
     ax.axvline(forecast.loc[start_test, 'ds'], color='k', ls='--', alpha=0.7)
     plt.show()
-
-    # Joint plot
-    sn.jointplot(x='yhat', y='y', data=train, kind="reg", color="b")
-    plt.xlabel('Predictions')
-    plt.ylabel('Observations')
-    plt.show()
-    sn.jointplot(x='yhat', y='y', data=test, kind="reg", color="b")
-    plt.xlabel('Predictions')
-    plt.ylabel('Observations')
-    plt.show()
-
+    # todo -- Joint plot
+    # sn.jointplot(x='yhat', y='y', data=train, kind="reg", color="b")
+    # plt.xlabel('Predictions')
+    # plt.ylabel('Observations')
+    # plt.show()
+    # sn.jointplot(x='yhat', y='y', data=test, kind="reg", color="b")
+    # plt.xlabel('Predictions')
+    # plt.ylabel('Observations')
+    # plt.show()
     residuals_properties(residuals)
     metrics(test.y, test.yhat)
