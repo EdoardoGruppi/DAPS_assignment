@@ -33,7 +33,6 @@ def covid_preprocessing(df_path, daily_change=True):
     """
     # Read the original data
     dataframe = read_pickle(df_path)
-    print(dataframe.describe())
     # Drop the columns that are not important for the aims of this specific analysis
     dataframe = dataframe[['date', 'confirmed', 'recovered', 'deaths']]
     # Transform the date in datetime objects to delete discrepancies with other datasets

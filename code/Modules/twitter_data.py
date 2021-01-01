@@ -108,7 +108,7 @@ def tweet_preprocessing(df_path, analysis='vader', like_weight=0, reply_weight=0
     Pre-processes the dataset of tweets by dropping and combining columns. It can consider tweets as they are published
     in a different day by means of the parameter move and it cleans the text of every message posted before applying
     sentiment analysis with one algorithm between two possibilities (vader and flair). Finally the preprocessed dataset
-    :raise saved in a new dedicated pickle file.
+    is saved in a new dedicated pickle file.
 
     :param df_path: path of the original dataset containing tweets.
     :param analysis: analysis methodology to adopt, i.e. 'vader' or 'flair'. default_value='vader'
@@ -120,7 +120,7 @@ def tweet_preprocessing(df_path, analysis='vader', like_weight=0, reply_weight=0
         are not considered. default_value=0
     :param move: indicates the London time (hours) after which tweets are moved to the next day. If 0 no tweet is
         shifted. default_value=0
-    :return: the path to the file in which the new tweets dataset is saved.
+    :return: the pre-processed dataset.
     """
     # Dictionary of possible functions for sentiment analysis
     function_dict = {'vader': vader_analysis, 'flair': flair_analysis}
@@ -148,4 +148,4 @@ def tweet_preprocessing(df_path, analysis='vader', like_weight=0, reply_weight=0
     tweets_dir = os.path.join(base_dir, f'{name}_{analysis}.pkl')
     # Save the new dataset in a dedicated novel pickle file
     to_pickle(tweets, tweets_dir)
-    return tweets_dir
+    return tweets

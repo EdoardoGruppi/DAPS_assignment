@@ -19,15 +19,29 @@ from sklearn.manifold import TSNE
 from pyod.models import feature_bagging, hbos, iforest, knn, mcd
 
 
-def detect_univariate_outlier(dataframe, cap='', nan=False):
-    # Remove not considered. Possible alternatives are: doing nothing, capping or replacing.
+def detect_univariate_outlier(dataframe, cap=None, nan=False):
+    """
+    Detects univariate outliers for each attribute belonging to the dataframe passed. The function displays three
+    distinct plots (boxplot, scatter plot with iqr outliers, scatter plot after calculating z-score) where outliers are
+    displayed with red dots. Once the outliers are detected the function can cap them (according to the maximum value
+    that does not correspond to outliers with either iqr score or Z-score) or replace their values with NaN.
+
+    :param dataframe: dataset to analyse.
+    :param cap: if 'iqr' or 'z_score' operates on the outliers detected with iqr score and z-score respectively.
+        default_value=None
+    :param nan: if it is True the outlier selected according to the cap parameter are replaced by NaN, otherwise they
+        are capped with the maximum "legit" value. default_value=False
+    :return:
+    """
+    # Outliers rows are not deleted. Alternatives considered are: doing nothing, capping or replacing their values.
     for column in dataframe:
         data = dataframe[column]
+        # Create the figure
         sn.set()
         fig, axes = plt.subplots(1, 3, figsize=(20, 5), gridspec_kw={'width_ratios': [1, 7, 7]})
         fig.suptitle(f"BoxPlot, ScatterPlot and Z-score of {company} {column}")
         sn.boxplot(data=data, ax=axes[0])
-        # Iqr outliers
+        # Compute iqr outliers and their position
         q1 = np.quantile(data, 0.25)
         q3 = np.quantile(data, 0.75)
         minimum = q1 - 1.5 * (q3 - q1)
@@ -35,26 +49,32 @@ def detect_univariate_outlier(dataframe, cap='', nan=False):
         outlier_iqr_loc = dataframe.index[np.where((data < minimum) | (data > maximum))]
         g = sn.scatterplot(x=dataframe.index, y=data, hue=(data < minimum) | (data > maximum), ax=axes[1], legend=False)
         g.set(xlabel=None, ylabel=None)
-        # Z score outliers
+        # Compute Z-score outliers and their position
         z = np.abs(stats.zscore(data))
         outlier_z_loc = dataframe.index[np.where(z > 3)]
         g = sn.scatterplot(x=dataframe.index, y=z, hue=z > 3, ax=axes[2], legend=False)
         g.set(xlabel=None, ylabel=None)
         plt.show()
-
+        # Change the outlier values if required and if there are outliers
         if cap == 'z_score' and len(outlier_z_loc) > 0:
             if nan:
+                # Replace with Nan values
                 data[outlier_z_loc] = float('nan')
             else:
+                # Find all the elements that do not correspond to outliers
                 dropped_outlier_dataset = data[np.setdiff1d(data.index, outlier_z_loc)]
                 data[outlier_z_loc] = np.max(dropped_outlier_dataset)
+            # Save the changed values in the dataframe passed
             dataframe[column] = data
         if cap == 'iqr' and len(outlier_iqr_loc) > 0:
             if nan:
+                # Replace with Nan values
                 data[outlier_iqr_loc] = float('nan')
             else:
+                # Find all the elements that do not correspond to outliers
                 dropped_outlier_dataset = data[np.setdiff1d(data.index, outlier_iqr_loc)]
                 data[outlier_iqr_loc] = np.max(dropped_outlier_dataset)
+            # Save the changed values in the dataframe passed
             dataframe[column] = data
 
 
@@ -93,30 +113,62 @@ def detect_multivariate_outlier(data, clf='iforest', contamination=0.03):
 
 
 def dataset_division(dataframe, valid_size=30, percentage=False):
+    """
+    Divides the dataset received in three parts: train, validation and test. The validation size can be expressed in
+    number of observations or in percentage.
+
+    :param dataframe: dataset to segment.
+    :param valid_size: dimension of validation set in number of observations or percentage. In the latter case set the
+        percentage parameter to True. default_value=False
+    :param percentage: if True valid_size is expressed as a percentage. default_value=False.
+    :return: the three parts obtained after the splitting
+    """
+    # Train part is defined in the global variables saved in config.py
     train = dataframe.loc[starting_date:ending_date]
-    valid = None
+    # Compute how many samples are reserved to training
     if percentage:
         train_samples = round(train.shape[0] * (1 - valid_size))
     else:
         train_samples = train.shape[0] - valid_size
-    if valid_size != 0:
-        valid = train.iloc[train_samples:, :]
+    # Divide the dataset in consecutive parts given that it is a time-series
+    valid = train.iloc[train_samples:, :]
     train = train.iloc[:train_samples, :]
     test = dataframe.loc[starting_test_period:ending_test_period]
     return train, valid, test
 
 
 def combine_dataset(datasets):
-    dataframe = DataFrame()
+    """
+    Combines dataframes together. The main dataframe must be passed as first. The other datasets are concatenated
+    horizontally.
+
+    :param datasets: list of dataframes to concatenate.
+    :return: the unified dataset.
+    """
+    # The first dataframe is the most important since it defines the number and which observations to keep.
+    dataframe = datasets[0]
+    del datasets[0]
+    # Concatenate one dataframe at a time
     for dataset in datasets:
-        dataframe = dataframe.join(dataset, how='outer')
+        dataframe = dataframe.join(dataset, how='left')
+    # Drop all the observations that exceed the entire period observed
     dataframe = dataframe[starting_date:ending_test_period]
+    # Replace the missing values created by this step with 0
     dataframe = dataframe.fillna(0)
     return dataframe
 
 
 def shift_dataset(dataset, column='Close'):
-    # Shift the columns so that the values of the previous day can be used to predict the next day.
+    """
+    Shift the columns of the dataset so that the values of the previous day of all the variables can be used to predict
+    the next day of the variable of interest. The shifting is needed since many forecasting techniques when working with
+    exogenous variables require the future values of those. To understand better it is possible to explore the formulas
+    related to these techniques.
+
+    :param dataset: dataset to modify.
+    :param column: column or list of columns not to include during the shifting. default_value='Close'
+    :return: the new dataset.
+    """
     # Time-series shifted is needed due to how fbprophet and arima make predictions.
     columns = [col for col in dataset.columns if col != column]
     dataset[columns] = dataset[columns].shift(1)
@@ -126,25 +178,56 @@ def shift_dataset(dataset, column='Close'):
 
 
 def transform_dataset(train, valid, test, algorithm='pca', n_components=2, kernel='rbf', perplexity=5, reduction=True):
+    """
+    Transforms the dataset computing several operations. Firstly, it excludes by any computation the time series to
+    predict. Secondly, if dimension reduction is required before applying the algorithm selected (pca, kernel pca,
+    t-sne) it normalizes the input in the range [0,1]. Normalization before dimension reduction is crucial. Then, in
+    both the cases (reduction requested or not requested) it brings all the features to the same scale, i.e. the scale
+    of the series to predict.
+
+    :param train: train dataset.
+    :param valid: validation dataset.
+    :param test: test dataset.
+    :param algorithm: dimensionality reduction algorithm to apply ('pca','pca_kernel','t-sne'). It is valid only if
+        reduction=True. default_value='pca'
+    :param n_components: number of components to keep after computing one of the algorithms. It can also be used to
+        express instead the variance to kept. default_value=2
+    :param kernel: valid only if reduction is True and algorithm is 'kernel_pca'. default_value='rbf'
+    :param perplexity: valid only if reduction is True and algorithm is 't-sne'. default_value=5
+    :param reduction: if True the dimensionality reduction is applied. default_value=False
+    :return: train, validation and test set normalized and if required also reduced.
+    """
+    # Dictionary of the dimensionality reduction algorithms
     function = {'pca': PCA(n_components=n_components),
                 'kernel_pca': KernelPCA(n_components=n_components, kernel=kernel),
-                'tsne': TSNE(n_components=n_components, init='random', random_state=0, perplexity=perplexity)}
+                't-sne': TSNE(n_components=n_components, init='random', random_state=0, perplexity=perplexity)}
+    # Exclude the main column from the computations
     train_data = train.drop(['Close'], axis=1)
     valid_data = valid.drop(['Close'], axis=1)
     test_data = test.drop(['Close'], axis=1)
-    scaler = MinMaxScaler()
-    train_data = scaler.fit_transform(train_data)
-    valid_data = scaler.transform(valid_data)
-    test_data = scaler.transform(test_data)
-    # Apply dimension reduction
+    # Apply dimensionality reduction exclusively when it is True
     if reduction:
+        # Select the algorithm
         model = function[algorithm]
+        # Normalization before applying dimensionality reduction
+        scaler = MinMaxScaler()
+        train_data = scaler.fit_transform(train_data)
+        valid_data = scaler.transform(valid_data)
+        test_data = scaler.transform(test_data)
+        # Apply dimensionality reduction
         train_data = model.fit_transform(train_data)
         valid_data = model.transform(valid_data)
         test_data = model.transform(test_data)
+    # Scale all the other features to the scale of the main column
+    scaler = MinMaxScaler(feature_range=(train.Close.min(), train.Close.max()))
+    train_data = scaler.fit_transform(train_data)
+    valid_data = scaler.transform(valid_data)
+    test_data = scaler.transform(test_data)
+    # Recreate the dataframes from the array returned by the various algorithms involved
     train = concat([DataFrame(train_data, index=train.index), train['Close']], axis=1)
     valid = concat([DataFrame(valid_data, index=valid.index), valid['Close']], axis=1)
     test = concat([DataFrame(test_data, index=test.index), test['Close']], axis=1)
+    # Transform in string all the names f the columns to avoid conflicts later.
     train.columns = [str(col) for col in train.columns]
     valid.columns = [str(col) for col in valid.columns]
     test.columns = [str(col) for col in test.columns]
@@ -152,6 +235,14 @@ def transform_dataset(train, valid, test, algorithm='pca', n_components=2, kerne
 
 
 def metrics(y, y_hat):
+    """
+    Computes metrics (MAPE, RMSE, CORR, R2, MAE, MPE, MSE) to evaluate models performance.
+
+    :param y: the true values of the test dataset.
+    :param y_hat: the predicted values.
+    :return:
+    """
+    # Compute errors
     d = y - y_hat
     mse_f = np.mean(d ** 2)
     mae_f = np.mean(abs(d))
@@ -166,7 +257,14 @@ def metrics(y, y_hat):
 
 
 def residuals_properties(residuals):
-    # The residuals in a time series model are what is left over after fitting a model.
+    """
+    Computes statistical values and displays plots to evaluate how the models fitted the training dataset. The residuals
+    in a time series model are what is left over after fitting a model.
+
+    :param residuals: residuals of the model.
+    :return:
+    """
+    # Compute mean, median, skewness, kurtosis and durbin statistic
     residuals = residuals[1:]
     mean = residuals.mean()
     median = residuals.median()
@@ -175,24 +273,26 @@ def residuals_properties(residuals):
     # skewness < 0 : more weight in the right tail of the distribution. Long left tail. Median after mean.
     skew = stats.skew(residuals)
     kurtosis = stats.kurtosis(residuals)
-    # Durbin-Watson statistic equal to  2.0 means that there is no auto-correlation.
+    # Durbin-Watson statistic equal to  2.0 means no auto-correlation.
     # Values between 0 and 2 indicate positive and values between 2 and 4 indicate negative auto-correlation.
     durbin = durbin_watson(residuals)
-
     print(f'\nResidual information:\n - Mean: {mean:.4f} \n - Median: {median:.4f} \n - Skewness: {skew:.4f} '
           f'\n - Kurtosis: {kurtosis:.4f}\n - Durbin: {durbin:.4f}')
+    # Create plots
     sn.set()
     fig, axes = plt.subplots(1, 5, figsize=(25, 5))
+    # Compute standardized residuals
     residuals = (residuals - np.nanmean(residuals)) / np.nanstd(residuals)
-    # First picture
+    # First picture: q-q plot
+    # Keep only not NaN residuals.
     residuals_non_missing = residuals[~(np.isnan(residuals))]
     qqplot(residuals_non_missing, line='s', ax=axes[0])
     axes[0].set_title('Normal Q-Q')
-    # Second picture
+    # Second picture: simple plot of standardized residuals
     x = np.arange(0, len(residuals), 1)
     sn.lineplot(x=x, y=residuals, ax=axes[1])
     axes[1].set_title('Standardized residual')
-    # Third picture
+    # Third picture: comparison between residual and gaussian distribution
     kde = stats.gaussian_kde(residuals_non_missing)
     x_lim = (-1.96 * 2, 1.96 * 2)
     x = np.linspace(x_lim[0], x_lim[1])
@@ -201,7 +301,7 @@ def residuals_properties(residuals):
     axes[2].set_xlim(x_lim)
     axes[2].legend()
     axes[2].set_title('Histogram plus estimated density')
-    # Last picture
+    # Last pictures: residuals auto-correlation plots
     plot_acf(residuals, ax=axes[3], lags=30)
     plot_pacf(residuals, ax=axes[4], lags=30)
     plt.show()
@@ -246,14 +346,6 @@ def check_normal_distribution(data):
     pylab.show()
 
 
-def plot_auto_correlation(series):
-    sn.set()
-    fig, axes = plt.subplots(1, 2, sharey='all', figsize=(13, 5))
-    plot_acf(series, ax=axes[0])
-    plot_pacf(series, ax=axes[1])
-    plt.show()
-
-
 def granger_test(dataframe, columns, max_lag=7, alpha_value=0.05, test='ssr_ftest'):
     # Null hypothesis: the time series in the second column, x2, does NOT Granger cause the time series in the first
     # column, x1. Grange causality means that past values of x2 have a statistically significant effect on the current
@@ -285,6 +377,58 @@ def decompose_series(series, period=None, mode='multiplicative', fig_width=15):
     plt.show()
 
 
+def csv2pickle(filename, remove=True):
+    """
+    Transforms a csv file in a pickle file.
+
+    :param filename: name of the csv file.
+    :param remove: if True the original file is deleted. default_value=True
+    :return: the path of the new pickle file.
+    """
+    # Create the path
+    path = os.path.join(base_dir, filename)
+    # Read the dataframe
+    df = read_csv(path, sep=',')
+    if remove:
+        os.remove(path)
+    # Create the new path using a new filename obtained from the previous one
+    filename = filename.split('.')[0] + '.pkl'
+    dataframe_path = os.path.join(base_dir, filename)
+    # Save the dataframe in the new file format
+    df.to_pickle(dataframe_path)
+    return dataframe_path
+
+
+def pickle2csv(filename, remove=False):
+    """
+    Transforms a pickle file in a csv file.
+
+    :param filename: name of the pickle file.
+    :param remove: if True the original file is deleted. default_value=False
+    :return: the path of the new csv file.
+    """
+    # Create the path
+    path = os.path.join(base_dir, filename)
+    # Read the dataframe
+    df = read_pickle(path)
+    if remove:
+        os.remove(path)
+    # Create the new path using a new filename obtained from the previous one
+    filename = filename.split('.')[0] + '.csv'
+    dataframe_path = os.path.join(base_dir, filename)
+    # Save the dataframe in the new file format
+    df.to_csv(dataframe_path)
+    return dataframe_path
+
+
+def plot_auto_correlation(series):
+    sn.set()
+    fig, axes = plt.subplots(1, 2, sharey='all', figsize=(13, 5))
+    plot_acf(series, ax=axes[0])
+    plot_pacf(series, ax=axes[1])
+    plt.show()
+
+
 def plot_dataframe(data, target_column=None):
     sn.set()
     if target_column is not None:
@@ -300,25 +444,3 @@ def count_missing_values(dataframe):
     missing_values = dataframe.isnull().sum()
     print(missing_values)
     return missing_values.sum() == 0
-
-
-def csv2pickle(filename, remove=True):
-    path = os.path.join(base_dir, filename)
-    df = read_csv(path, sep=',')
-    if remove:
-        os.remove(path)
-    filename = filename.split('.')[0] + '.pkl'
-    dataframe_path = os.path.join(base_dir, filename)
-    df.to_pickle(dataframe_path)
-    return dataframe_path
-
-
-def pickle2csv(filename, remove=False):
-    path = os.path.join(base_dir, filename)
-    df = read_pickle(path)
-    if remove:
-        os.remove(path)
-    filename = filename.split('.')[0] + '.csv'
-    dataframe_path = os.path.join(base_dir, filename)
-    df.to_csv(dataframe_path)
-    return dataframe_path

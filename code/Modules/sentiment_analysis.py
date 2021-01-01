@@ -65,7 +65,7 @@ def vader_analysis(tweets, like_weight, reply_weight, retweet_weight, target_col
     results = []
     print('Vader analysis started...')
     for count, tweet in enumerate(tweets[target_column].to_list(), 1):
-        if count % 1000 == 0:
+        if count % 10000 == 0:
             print(f'{count} tweets executed')
         # Extract sentiment prediction
         result = sentiment_model.polarity_scores(tweet)['compound']
