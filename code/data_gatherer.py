@@ -36,7 +36,6 @@ news_path = get_news_tweeted(usernames, filename='News', words=company_extended,
 covid_dir = get_covid_data(filename='Covid')
 
 # ======================================================================================================================
-
 # Uncomment the following lines to get indicators
 # indicators = ['bbands', 'sma', 'ema', 'rsi', 'adx']
 # indicators_dir = get_multiple_indicators(indicators)
