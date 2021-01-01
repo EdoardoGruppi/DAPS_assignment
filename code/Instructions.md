@@ -2,68 +2,47 @@
 
 ## Setup
 
-1. Install Tensorflow and all the other packages appointed in the [README.md](https://github.com/EdoardoGruppi/AMLS_assignment20_21/blob/main/README.md) file.
-2. Install Alpha Advantage package....
-```
-pip install alpha_vantage
-```
-3. Install twint
-```
-pip install --user --upgrade git+https://github.com/twintproject/twint.git@origin/master#egg=twint
-```
-3. Install flair. to run with GPU you must have torch with cuda enabled
-```python 
-import torch
-import flair
-device = None
-if torch.cuda.is_available():
-    device = torch.device('cuda:0')
-else:
-    device = torch.device('cpu')
-print(device)
-torch.zeros(1).cuda()
-```
-```
-pip install flair
-```
-4. Install mplfinance from pip, not from conda
-```
-pip install statsmodels
-```
+1. Install all the other packages appointed in the [README.md](https://github.com/EdoardoGruppi/AMLS_assignment20_21/blob/main/README.md) file using conda or pip.
+2. To install Twint could be necessary to run the code below to be sure that the last version is installed.
+   ```
+   pip install --user --upgrade git+https://github.com/twintproject/twint.git@origin/master#egg=twint
+   ```
+3. Install flair. Note that to run Flair with GPU it is required to have torch with cuda enabled.
 
-5. install statsmodels
-```
-pip install statsmodels
-```
-6. pip install pystan
-pip install fbprophet or
-conda install -c conda-forge fbprophet
+   ```
+   pip install flair
+   ```
 
-7. pip install pyod
-8. pip install pmdarima
-   pip install pymongo
-9. pip install covid19dh
-10. breaks fbprophet holiday
-    conda install -c conda-forge fbprophet will install the last version with the bug fixed
-    conda install -c conda-forge pystan
+   Optional:
+
+   ```python
+   import torch
+   import flair
+   device = None
+   if torch.cuda.is_available():
+       device = torch.device('cuda:0')
+   else:
+       device = torch.device('cpu')
+   print(device)
+   torch.zeros(1).cuda()
+   ```
+
+4. When installing fbprophet it is needed to run the following lines since there is a conflict between specific version of fbprophet and pystan.
+   ```
+   conda install -c conda-forge fbprophet
+   conda install -c conda-forge pystan
+   ```
+
 ## Run the code
 
 Once all the necessary packages have been installed you can run the code by typing this line on the terminal.
-
-**Note:** To follow step by step the main execution take a look on the dedicated Section below.
 
 ```
 python main.py
 ```
 
+## Additional information
 
-
-## Datasets
-
-### Dataset division
-
-## Model (or models)
-
-## Main execution
+A more detailed overview of the project is provided in the report published (the pdf file).
 
 ## Issues
