@@ -5,6 +5,7 @@ alpha_vantage_api_key = 'DWT0NVZMA5D0V0TW'
 base_dir = './Datasets'
 # Company signature used within the Nasdaq stock market
 company = 'MSFT'
+# Extended name of the company selected
 company_extended = 'Microsoft'
 # The date that defines the beginning of the observed period
 starting_date = '2017-04-01'

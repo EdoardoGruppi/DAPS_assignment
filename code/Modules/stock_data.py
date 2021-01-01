@@ -79,7 +79,7 @@ def get_multiple_indicators(indicators, time_period=20):
     return data_directory
 
 
-def time_series_preprocessing(time_series, method='linear', cap=None, nan=False, path=True):
+def time_series_preprocessing(time_series, method='linear', cap=None, nan=False, path=True, multi=False):
     """
     Pre-processes the time series dropping and combining columns. It allows also to operate outliers and missing values.
 
@@ -91,6 +91,8 @@ def time_series_preprocessing(time_series, method='linear', cap=None, nan=False,
     :param nan: important only if cap is True. If True the outliers are substituted by NaN, otherwise they are replaced
         by the maximum value not detected as outlier. default_value=False
     :param path: if True time_series is the path of the file where the. Else the name. default_value=True
+    :param multi: if True it can detect multivariate outliers using algorithms such as isolation forest.
+        default_value=False
     :return:
     """
     if path:
@@ -105,8 +107,9 @@ def time_series_preprocessing(time_series, method='linear', cap=None, nan=False,
     time_series = time_series.rename(columns={'5. adjusted close': 'Close', '6. volume': 'Volume'})
     # Detect outliers
     # todo -- detect_univariate_outlier(time_series, cap=cap, nan=nan)
-    # the next line in case you want detect multivariate outliers using for instance isolation forest.
-    # outliers_index = detect_multivariate_outlier(time_series, clf='iforest')
+    if multi:
+        # the next line allows to detect multivariate outliers using for instance isolation forest.
+        outliers_index = detect_multivariate_outlier(time_series, clf='iforest')
     # Add the missing days that are not considered since the stock market is closed during weekends and holidays.
     # In this case asfreq() could also be used instead of resample() since it is adopted only to add non-working day
     # and the sampling frequency is already daily.
