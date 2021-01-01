@@ -9,7 +9,7 @@ import seaborn as sn
 from Modules.utilities import detect_univariate_outlier, multivariate_visualization, detect_multivariate_outlier
 
 
-def get_daily_time_series():
+def get_daily_time_series(filename='Time_series'):
     """
     Gets the daily stock movements of the company and from the starting date selected in the config.py
 
@@ -22,7 +22,7 @@ def get_daily_time_series():
     # Retain only the entries from the starting date selected in config.py until now
     data = data.loc[starting_date:]
     # Save the dataset acquired in a pickle file
-    data_directory = os.path.join(base_dir, 'Time_series.pkl')
+    data_directory = os.path.join(base_dir, f'{filename}.pkl')
     to_pickle(data, data_directory)
     return data_directory
 
@@ -45,7 +45,7 @@ def get_indicator(indicator, time_period=20, plot=True):
     # Retain only the entries from the starting date selected in config.py until now
     data = data.loc[starting_date:]
     # Save the dataset acquired in a pickle file
-    data_directory = os.path.join(base_dir, '{}.pkl'.format(indicator))
+    data_directory = os.path.join(base_dir, f'{indicator}.pkl')
     to_pickle(data, data_directory)
     if plot:
         sn.set()
