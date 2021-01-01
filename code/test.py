@@ -37,12 +37,13 @@ dataframe = combine_dataset([time_series, covid, tweets, news])
 # granger_test(dataframe, ['Close', 'Sentiment'])
 dataframe = shift_dataset(dataframe)
 train, valid, test = dataset_division(dataframe)
-train, valid, test = transform_dataset(train, valid, test, algorithm='pca', n_components=1, reduction=False)
 
 # DATA EXPLORATION =====================================================================================================
 
+train, valid, test = transform_dataset(train, valid, test, algorithm='pca', n_components=2, reduction=True)
 
 # DATA INFERENCE =======================================================================================================
+# todo regressor false and true changes
 prophet_predictions(train, valid, regressor=True, mode='multiplicative', holidays=False)
 # arima = arima_predictions(train, valid, regressor=True)
 # The validation split is used to set all the hyper-parameters that cannot be found with grid search algorithms
