@@ -35,10 +35,9 @@ def arima_predictions(train, test, regressor=True):
         exog_test = None
     # Auto_arima function allows to set a range of p,d,q,P,D,and Q values and then fit models for all the possible
     # combinations. Then the model will keep the combination that reported back the best (lower) AIC value.
-    # If m = 7 means daily seasonality, 12 monthly seasonality, 52 weekly seasonality
     # Arima differences both the y variable and the exogenous variables as specified in the arguments.
     # Find and fit the best model
-    model = auto_arima(y=train['Close'], X=exog_train, start_p=1, start_q=1, m=52, seasonal=True, trace=True,
+    model = auto_arima(y=train['Close'], X=exog_train, start_p=1, start_q=1, max_d=12, seasonal=False, trace=True,
                        error_action='ignore', suppress_warnings=True, stepwise=True)
     print(model.summary())
     # Specify the number of days in the future to predict

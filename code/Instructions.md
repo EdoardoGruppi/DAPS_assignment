@@ -35,6 +35,8 @@
 
 ## Run the code
 
+ALTRO
+
 Once all the necessary packages have been installed you can run the code by typing this line on the terminal.
 
 ```

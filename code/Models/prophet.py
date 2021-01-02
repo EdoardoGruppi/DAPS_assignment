@@ -32,7 +32,7 @@ def prophet_predictions(train, test, regressor=True, mode='multiplicative', holi
                     interval_width=interval, daily_seasonality=False, seasonality_prior_scale=sps,
                     changepoint_prior_scale=cps, n_changepoints=n_change_points)
     # Add seasonality to the model
-    model.add_seasonality(name='two-years', period=700, fourier_order=20, prior_scale=15)
+    # model.add_seasonality(name='two-years', period=700, fourier_order=20, prior_scale=15)
     # If requested add holidays component to the model
     if holidays:
         model.add_country_holidays(country_name='US')
