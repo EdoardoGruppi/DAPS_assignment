@@ -352,7 +352,7 @@ def plot_auto_correlation(series, title=None):
     plt.show()
 
 
-def granger_test(dataframe, target_column, max_lag=5, test='ssr_ftest'):
+def granger_test(dataframe, target_column, max_lag=1, test='ssr_ftest'):
     """
     Performs granger test on the time series passed. Null hypothesis: the second time series, x2, does NOT Granger
     cause the time series of interest, x1. Grange causality means that past values of x2 have a statistically
@@ -402,8 +402,6 @@ def ohlc_chart(data, start=starting_date, end=ending_date, candle_size='W', volu
     :param volume: if True the volume is also reported below the ohlc chart. default_value=False
     :return:
     """
-    # Change the names of the columns.
-    data = data.rename(columns={'1. open': 'Open', '2. high': 'High', '3. low': 'Low', '5. adjusted close': 'Close'})
     data = data[start:end].resample(candle_size).mean()
     # Plot candlestick.
     new_style = mpf.make_mpf_style(base_mpl_style='seaborn', rc={'axes.grid': True})

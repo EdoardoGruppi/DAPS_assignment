@@ -73,6 +73,10 @@ Please note that the descriptions provided in this subsection are taken directly
 
 **utilities.py** provides several functions useful to analyse data through visualization and statistic. Moreover, additional functionalities are made available to simply manage and handle data.
 
+**exploration.py**
+
+**mongo_db.py**
+
 **arima.py** contains all the necessary to predict future values of a time series through a model of the ARIMA's family.
 
 **prophet.py** offfers the possibility to forecast future values of a time series via the Facebook Prophet model.

@@ -32,7 +32,7 @@
    conda install -c conda-forge fbprophet
    conda install -c conda-forge pystan
    ```
-
+!pip install dnspython
 ## Run the code
 
 ALTRO

@@ -3,7 +3,7 @@ from Modules.config import *
 from alpha_vantage.timeseries import TimeSeries
 from alpha_vantage.techindicators import TechIndicators
 import matplotlib.pyplot as plt
-from pandas import to_pickle, DataFrame, read_pickle
+from pandas import to_pickle, DataFrame, read_pickle, DatetimeIndex
 import os
 import seaborn as sn
 from Modules.utilities import detect_univariate_outlier, multivariate_visualization, detect_multivariate_outlier
@@ -19,8 +19,13 @@ def get_daily_time_series(filename='Time_series'):
     # Get the date, daily open, high, low, close, split, dividend, adjusted close and volume
     data, meta_data = ts.get_daily_adjusted(company, outputsize='full')
     data = data.sort_index(ascending=True)
+    # Change the names of the columns. It is also required to load data on mongo db
+    data = data.rename(columns={'1. open': 'Open', '2. high': 'High', '3. low': 'Low', '4. close': 'Original Close',
+                                '5. adjusted close': 'Close', '6. volume': 'Volume', '7. dividend amount': 'Dividend',
+                                '8. split coefficient': 'Split'})
     # Retain only the entries from the starting date selected in config.py until now
     data = data.loc[starting_date:]
+    data.reset_index(level=0, inplace=True)
     # Save the dataset acquired in a pickle file
     data_directory = os.path.join(base_dir, f'{filename}.pkl')
     to_pickle(data, data_directory)
@@ -97,14 +102,13 @@ def time_series_preprocessing(time_series, method='linear', cap=None, nan=False,
     """
     if path:
         time_series = read_pickle(time_series)
+    time_series = time_series.set_index('date')
     # Discard some columns that are not necessary like close, dividend amounts and split. In particular, adjusted close
     # is usually used to estimate historical correlation and volatility of companies stocks. The adjusted
     # closing price analyses the stock's dividends, stock splits and new stock offerings to determine an adjusted value.
     # Plot relationships between the features. Almost perfectly correlated features may be represented by only one var.
-    # todo -- multivariate_visualization(time_series.drop(['7. dividend amount', '8. split coefficient'], axis=1))
-    time_series = time_series[['5. adjusted close', '6. volume']]
-    # Change name columns. This will be useful if plots are required.
-    time_series = time_series.rename(columns={'5. adjusted close': 'Close', '6. volume': 'Volume'})
+    # todo -- multivariate_visualization(time_series.drop(['Dividend', 'Split'], axis=1))
+    time_series = time_series[['Close', 'Volume']]
     # Detect outliers
     # todo -- detect_univariate_outlier(time_series, cap=cap, nan=nan)
     if multi:

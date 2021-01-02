@@ -1,7 +1,11 @@
 # Dedicated file to store global variables
 # This file can help to reduce hard_coding and to change only once variables in different files and functions.
 
+# Alpha vantage api key
 alpha_vantage_api_key = 'DWT0NVZMA5D0V0TW'
+# Mongo db cloud database key
+mongo_key = 'mongodb+srv://dodo1:bIeWToJVKHbA6Ygv@cluster0.7yzfm.mongodb.net/Test?retryWrites=true&w=majority'
+# path to the directory containing the datasets
 base_dir = './Datasets'
 # Company signature used within the Nasdaq stock market
 company = 'MSFT'

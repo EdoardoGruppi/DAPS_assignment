@@ -1,6 +1,4 @@
 # Import packages
-from Modules.config import *
-import os
 from Modules.twitter_data import tweet_preprocessing
 from Modules.stock_data import time_series_preprocessing
 from Modules.utilities import *
@@ -9,12 +7,14 @@ from Models.prophet import prophet_predictions
 from Models.arima import arima_predictions, arima_test
 from Modules.covid_data import covid_preprocessing
 from Modules.exploration import *
+from Modules.mongo_db import download_datasets
 
 # STOCK DATA ACQUISITION AND STORAGE ===================================================================================
 # If the datasets are not directly provided from the beginning there are two possibilities:
 # 1. run the data_gatherer.py from the terminal
-# todo -- 2. download the necessary information from the dedicated cloud database.
-
+# 2. download the necessary information from the dedicated cloud database.
+# To make the entire procedure faster the second option is preferred.
+# todo -- download_datasets()
 # Once the datasets are locally available load the dataframes related to every pkl file.
 time_series_dir = os.path.join(base_dir, 'Time_series.pkl')
 covid_dir = os.path.join(base_dir, 'Covid.pkl')
@@ -63,7 +63,6 @@ prophet_predictions(train_stock, valid_stock, regressor=True, mode='multiplicati
 train_stock = concat([train_stock, valid_stock])
 prophet_predictions(train_stock, test_stock, regressor=True, mode='multiplicative', holidays=False)
 # arima_test(model=arima, train=train_stock, test=test_stock, regressor=True)
-# todo delete one of the next lines
 # Remake the prediction using the model that led to best results in the previous step
 train = concat([train, valid])
 prophet_predictions(train, test, regressor=True, mode='multiplicative', holidays=False)
