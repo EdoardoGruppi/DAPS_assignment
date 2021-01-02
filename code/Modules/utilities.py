@@ -17,6 +17,7 @@ from sklearn.preprocessing import MinMaxScaler, StandardScaler
 from sklearn.decomposition import PCA, KernelPCA
 from sklearn.manifold import TSNE
 from pyod.models import feature_bagging, hbos, iforest, knn, mcd
+from pmdarima.arima import ADFTest, ndiffs
 
 
 def detect_univariate_outlier(dataframe, cap=None, nan=False):
@@ -79,37 +80,29 @@ def detect_univariate_outlier(dataframe, cap=None, nan=False):
 
 
 def multivariate_visualization(dataframe):
+    """
+    Plots the scatter plot and the correlation matrices of the dataset attributes.
+
+    :param dataframe: dataset to analyse.
+    :return:
+    """
     sn.set(font_scale=1)
+    # Use number instead of columns to get a tidier layout
     labels = np.arange(dataframe.shape[1])
-    fig, axes = plt.subplots(1, 2, sharex='all', figsize=(10, 5))
-    fig.suptitle(f"Correlation {company} dataset")
+    fig, axes = plt.subplots(1, 2, sharex='all', figsize=(8, 4))
+    # Pearson correlation matrix
     pearson_matrix = dataframe.corr(method='pearson')
     sn.heatmap(pearson_matrix, annot=True, linewidths=2, cmap='GnBu_r', cbar=False, square=True, ax=axes[0],
                xticklabels=labels, yticklabels=labels, vmax=1, vmin=-1)
+    # Spearman correlation matrix
     corr_matrix = dataframe.corr(method='spearman')
     sn.heatmap(corr_matrix, annot=True, linewidths=2, cmap='GnBu_r', cbar=False, square=True, ax=axes[1],
                xticklabels=labels, yticklabels=labels, vmax=1, vmin=-1)
     plt.show()
+    # Scatter plot matrix
     g = sn.pairplot(dataframe, plot_kws=dict(s=10), diag_kind='hist', diag_kws=dict(kde=True, bins=50))
     g.map_upper(sn.kdeplot, levels=4)
     plt.show()
-    return
-
-
-def detect_multivariate_outlier(data, clf='iforest', contamination=0.03):
-    # It ranks all points by raw outlier scores and then mark the top %contamination as outliers.
-    # Visualization difficult to realise when there are 4 or more features
-    classifiers = {'hbos': hbos.HBOS, 'feature_bagging': feature_bagging.FeatureBagging, 'iforest': iforest.IForest,
-                   'knn': knn.KNN, 'mcd': mcd.MCD}
-    clf = classifiers[clf](contamination=contamination)
-    # Fit detector.
-    clf.fit(data)
-    # The binary labels of the training data. 0 stands for inliers and 1 for outliers/anomalies.
-    labels = clf.labels_
-    # The outlier scores of the training data. The higher, the more abnormal.
-    scores = clf.decision_scores_
-    index = np.where(labels == 1)
-    return data.index[index]
 
 
 def dataset_division(dataframe, valid_size=30, percentage=False):
@@ -244,6 +237,7 @@ def metrics(y, y_hat):
     """
     # Compute errors
     d = y - y_hat
+    # Compute and print metrics
     mse_f = np.mean(d ** 2)
     mae_f = np.mean(abs(d))
     rmse_f = np.sqrt(mse_f)
@@ -267,17 +261,25 @@ def residuals_properties(residuals):
     # Compute mean, median, skewness, kurtosis and durbin statistic
     residuals = residuals[1:]
     mean = residuals.mean()
-    median = residuals.median()
+    median = np.median(residuals)
     # skewness = 0 : normally distributed.
     # skewness > 0 : more weight in the left tail of the distribution. Long right tail. Median before mean.
     # skewness < 0 : more weight in the right tail of the distribution. Long left tail. Median after mean.
     skew = stats.skew(residuals)
+    # Kurtosis is the degree of the peak of a distribution.
+    # 3 it is normal, >3 higher peak, <3 lower peak
     kurtosis = stats.kurtosis(residuals)
     # Durbin-Watson statistic equal to  2.0 means no auto-correlation.
     # Values between 0 and 2 indicate positive and values between 2 and 4 indicate negative auto-correlation.
     durbin = durbin_watson(residuals)
+    # Shapiro-Wilk quantifies how likely it is that the data was drawn from a Gaussian distribution.
+    # Null hypothesis: the sample is normally distributed
+    shapiro = stats.shapiro(residuals)[1]
+    # Anderson-Darling test null hypothesis: the sample follows the normal distribution
+    anderson = stats.normaltest(residuals)[1]
     print(f'\nResidual information:\n - Mean: {mean:.4f} \n - Median: {median:.4f} \n - Skewness: {skew:.4f} '
-          f'\n - Kurtosis: {kurtosis:.4f}\n - Durbin: {durbin:.4f}')
+          f'\n - Kurtosis: {kurtosis:.4f}\n - Durbin: {durbin:.4f}',
+          f'\n - Shapiro p-value: {shapiro:.4f}\n - Anderson p-value: {anderson:.4f}\n')
     # Create plots
     sn.set()
     fig, axes = plt.subplots(1, 5, figsize=(25, 5))
@@ -307,58 +309,99 @@ def residuals_properties(residuals):
     plt.show()
 
 
-# todo change code
-def detect_seasonality(time_series, column):
-    dataframe = time_series.copy()
-    dataframe['year'] = dataframe.index.year
-    dataframe['month'] = dataframe.index.month
-    dataframe['day'] = dataframe.index.day
-    dataframe['weekday'] = dataframe.index.weekday
-    sn.set()
-    fig, axes = plt.subplots(1, 3, figsize=(23, 5), gridspec_kw={'width_ratios': [1, 3, 3]})
-    sn.lineplot(data=dataframe, x='month', y=column, hue='year', legend='full', ax=axes[0])
-    axes[0].set_title('Yearly seasonality plot')
-    sn.lineplot(data=dataframe, x='day', y=column, hue='month', legend='full', ci=None, ax=axes[1])
-    axes[1].set_title('Monthly seasonality plot')
-    sn.lineplot(data=dataframe, x='weekday', y=column, hue='month', legend='full', ci=None, ax=axes[2])
-    axes[2].set_title('Weekly seasonality plot')
-    plt.legend()
-    plt.show()
-
-
 def check_stationarity(time_series):
-    # Perform Dickey-Fuller test:
-    # The null hypothesis (p-value > 0.05) for this test is that the data is not stationary.
+    """
+    Performs the Augmented Dickey-Fuller test wherein the null hypothesis is: data is not stationary. Adopting an alpha
+    value of 0.05, the null hypothesis will be rejected only when the confidence is greater than 95%. This function also
+    differences until it can be considered stationary with 95% or more of confidence.
+
+    :param time_series: series to analyse with the ADF test.
+    :return:
+    """
+    # Make sure that the original time series is not modified
+    series = time_series.copy()
     print('Results of Dickey-Fuller Test:')
-    df_test = adfuller(time_series, autolag='AIC')
-    df_output = Series(df_test[0:4], index=['Test Statistic', 'p-value', '#Lags Used', 'Number of Observations Used'])
-    for key, value in Series(df_test)[4].items():
-        df_output[f'Critical Value (%{key:s})'] = value
-    print(df_output)
+    adf_test = ADFTest(alpha=0.05)
+    diff_order = 0
+    while True:
+        # Compute the ADF test. It returns the p-value and if differencing is needed
+        results, should = adf_test.should_diff(series)
+        print(f'Differencing order: {diff_order} - P-value: {results:.4f} - Stop: {not should}')
+        if should:
+            # If it is not already stationary, apply differencing of one order above
+            diff_order += 1
+            series = series.diff(periods=diff_order).bfill()
+        else:
+            break
 
 
-def check_normal_distribution(data):
-    print(f'Shapiro test: {stats.shapiro(data)}')
-    print(f'Anderson test: {stats.normaltest(data)}')
-    sn.displot(data=data, kde=True)
+def plot_auto_correlation(series, title=None):
+    """
+    Plots the auto correlation functions of the series provided.
+
+    :param series: time series to analyse.
+    :param title: title (optional) of the picture. default_value=None
+    :return:
+    """
+    sn.set()
+    fig, axes = plt.subplots(1, 2, sharey='all', figsize=(13, 5))
+    if title is not None:
+        fig.suptitle(title)
+    plot_acf(series, ax=axes[0])
+    plot_pacf(series, ax=axes[1])
     plt.show()
-    stats.probplot(data, dist="norm", plot=pylab)
-    pylab.show()
 
 
-def granger_test(dataframe, columns, max_lag=7, alpha_value=0.05, test='ssr_ftest'):
-    # Null hypothesis: the time series in the second column, x2, does NOT Granger cause the time series in the first
-    # column, x1. Grange causality means that past values of x2 have a statistically significant effect on the current
-    # value of x1.
-    dictionary = grangercausalitytests(dataframe[columns], maxlag=max_lag)
-    print(f'\n Null hypothesis rejected in lags: ')
-    counter = 0
-    for item in dictionary.values():
-        counter += 1
-        print(f'Lags number {counter}: {item[0][test][1] <= alpha_value}')
+def granger_test(dataframe, target_column, max_lag=5, test='ssr_ftest'):
+    """
+    Performs granger test on the time series passed. Null hypothesis: the second time series, x2, does NOT Granger
+    cause the time series of interest, x1. Grange causality means that past values of x2 have a statistically
+    significant effect on the current value of x1.
+
+    :param dataframe: dataset to analyse.
+    :param target_column: time series x1.
+    :param max_lag: maximum number of lags to consider. default_value=5
+    :param test: which test to keep between the four computed by the stat function. default_value='ssr_ftest'
+    :return:
+    """
+    print('\n\nGranger Test:')
+    results = []
+    columns = [col for col in dataframe.columns if col != target_column]
+    for col_name in columns:
+        dictionary = grangercausalitytests(dataframe[[target_column, col_name]], maxlag=max_lag)
+        results.append(Series([item[0][test][1] for item in dictionary.values()], name=col_name))
+    results = concat(results, axis=1)
+    print(results)
+
+
+def decompose_series(series, period=None, mode='multiplicative'):
+    """
+    Decomposes a series using moving averages.
+
+    :param series: time series to decompose.
+    :param period: Period of the series. Must be used if x is not a pandas object. default_value=None
+    :param mode: Type of seasonal component ('additive', 'multiplicative'). default_value='multiplicative'
+    :return:
+    """
+    sn.set()
+    result = seasonal_decompose(series, model=mode, period=period)
+    result.plot().set_figwidth(15)
+    print(f'{mode}: [mean: {result.seasonal.mean()}, max:{result.seasonal.max()}, min:{result.seasonal.min()}]')
+    plt.show()
+    residuals_properties(result.resid.dropna())
 
 
 def ohlc_chart(data, start=starting_date, end=ending_date, candle_size='W', volume=False):
+    """
+    Plots the open, high, low, close chart of the company.
+
+    :param data: stock dataset.
+    :param start: the first date to consider while creating the chart. default_value=starting_date
+    :param end: the last date to consider while creating the chart. default_value=ending_date
+    :param candle_size: dimension of the candles. default_value='W'
+    :param volume: if True the volume is also reported below the ohlc chart. default_value=False
+    :return:
+    """
     # Change the names of the columns.
     data = data.rename(columns={'1. open': 'Open', '2. high': 'High', '3. low': 'Low', '5. adjusted close': 'Close'})
     data = data[start:end].resample(candle_size).mean()
@@ -367,14 +410,6 @@ def ohlc_chart(data, start=starting_date, end=ending_date, candle_size='W', volu
     mpf.plot(data, type='candle', ylabel='Price ($)', volume=volume, mav=(5, 10), figsize=(30, 7), style=new_style,
              scale_padding=0.05, xrotation=0, savefig=dict(fname="ohlc.png", bbox_inches="tight"))
     mpf.show()
-
-
-def decompose_series(series, period=None, mode='multiplicative', fig_width=15):
-    sn.set()
-    result = seasonal_decompose(series, model=mode, period=period)
-    result.plot().set_figwidth(fig_width)
-    print(f'{mode}: [mean: {result.seasonal.mean()}, max:{result.seasonal.max()}, min:{result.seasonal.min()}]')
-    plt.show()
 
 
 def csv2pickle(filename, remove=True):
@@ -421,15 +456,32 @@ def pickle2csv(filename, remove=False):
     return dataframe_path
 
 
-def plot_auto_correlation(series):
+def detect_seasonality(dataframe, column):
+    """
+    Displays two seasonal plots to detect recurrent patterns in data throughout years or months.
+
+    :param dataframe: input data.
+    :param column: target column to visualize.
+    :return:
+    """
     sn.set()
-    fig, axes = plt.subplots(1, 2, sharey='all', figsize=(13, 5))
-    plot_acf(series, ax=axes[0])
-    plot_pacf(series, ax=axes[1])
+    fig, axes = plt.subplots(1, 2, figsize=(23, 5), gridspec_kw={'width_ratios': [2, 5]})
+    sn.lineplot(data=dataframe, x='Month', y=column, hue='Year', legend='full', ax=axes[0])
+    axes[0].set_title('Yearly seasonality plot')
+    sn.lineplot(data=dataframe, x='Day', y=column, hue='Month', legend='full', ci=None, ax=axes[1])
+    axes[1].set_title('Monthly seasonality plot')
+    plt.legend()
     plt.show()
 
 
 def plot_dataframe(data, target_column=None):
+    """
+    Plots one or all the columns of the dataframe passed.
+
+    :param data: dataset to visualize.
+    :param target_column: column to plot. If it is None all the columns of the dataframe are plotted. default_value=None
+    :return:
+    """
     sn.set()
     if target_column is not None:
         data[target_column].plot()
@@ -440,7 +492,25 @@ def plot_dataframe(data, target_column=None):
     plt.show()
 
 
-def count_missing_values(dataframe):
-    missing_values = dataframe.isnull().sum()
-    print(missing_values)
-    return missing_values.sum() == 0
+def detect_multivariate_outlier(data, clf='iforest', contamination=0.03):
+    """
+    Detects the multivariate outliers inside a dataframe. It ranks all points by raw outlier scores and then mark the
+    top %contamination as outliers.
+
+    :param data: dataset to analyse.
+    :param clf: algorithm or model adopted to detect outliers. default_value='iforest'
+    :param contamination: percentage of contamination. default_value=0.03
+    :return: the dates of the observations detected as multivariate outliers.
+    """
+    # Visualization difficult to realise when there are 4 or more features
+    classifiers = {'hbos': hbos.HBOS, 'feature_bagging': feature_bagging.FeatureBagging, 'iforest': iforest.IForest,
+                   'knn': knn.KNN, 'mcd': mcd.MCD}
+    clf = classifiers[clf](contamination=contamination)
+    # Fit detector
+    clf.fit(data)
+    # The binary labels of the training data. 0 stands for inliers and 1 for outliers/anomalies.
+    labels = clf.labels_
+    # The outlier scores of the training data. The higher, the more abnormal.
+    scores = clf.decision_scores_
+    index = np.where(labels == 1)
+    return data.index[index]

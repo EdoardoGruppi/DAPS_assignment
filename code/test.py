@@ -8,6 +8,7 @@ from pandas import to_pickle, DataFrame, read_pickle, concat
 from Models.prophet import prophet_predictions
 from Models.arima import arima_predictions, arima_test
 from Modules.covid_data import covid_preprocessing
+from Modules.exploration import *
 
 # STOCK DATA ACQUISITION AND STORAGE ===================================================================================
 # If the datasets are not directly provided from the beginning there are two possibilities:
@@ -38,12 +39,18 @@ news.name = 'Mood'
 dataframe = combine_dataset([time_series, covid, tweets, news])
 dataframe = shift_dataset(dataframe)
 train, valid, test = dataset_division(dataframe)
+del time_series_dir, covid_dir, news_dir, tweets_dir
 
 # DATA EXPLORATION =====================================================================================================
+dataframe, new_dataframe, columns = change_format(concat([train, valid]))
+# # multivariate_visualization(dataframe)
+# # attributes_visualization(new_dataframe, columns, hue=['Day', 'Month', 'Year', 'Quarter', 'WeekDay'])
+# # plot_rolling(dataframe['Close'], window=7)
+# decompose_series(dataframe['Close'], mode='multiplicative')
+# check_stationarity(dataframe['Close'])
+granger_test(dataframe, 'Close')
+# del new_dataframe, dataframe, columns
 
-# check_stationarity(train['Close'])
-# decompose_series(train['Close'], mode=mode)
-# granger_test(dataframe, ['Close', 'Sentiment'])
 train_stock, valid_stock, test_stock = dataset_division(shift_dataset(time_series))
 train_stock, valid_stock, test_stock = transform_dataset(train_stock, valid_stock, test_stock, reduction=False)
 train, valid, test = transform_dataset(train, valid, test, algorithm='pca', n_components=0.90, reduction=True)
@@ -56,7 +63,7 @@ prophet_predictions(train_stock, valid_stock, regressor=True, mode='multiplicati
 train_stock = concat([train_stock, valid_stock])
 prophet_predictions(train_stock, test_stock, regressor=True, mode='multiplicative', holidays=False)
 # arima_test(model=arima, train=train_stock, test=test_stock, regressor=True)
+# todo delete one of the next lines
 # Remake the prediction using the model that led to best results in the previous step
 train = concat([train, valid])
 prophet_predictions(train, test, regressor=True, mode='multiplicative', holidays=False)
-
