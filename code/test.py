@@ -43,12 +43,13 @@ del time_series_dir, covid_dir, news_dir, tweets_dir
 
 # DATA EXPLORATION =====================================================================================================
 dataframe, new_dataframe, columns = change_format(concat([train, valid]))
-# # multivariate_visualization(dataframe)
-# # attributes_visualization(new_dataframe, columns, hue=['Day', 'Month', 'Year', 'Quarter', 'WeekDay'])
-# # plot_rolling(dataframe['Close'], window=7)
+# multivariate_visualization(dataframe)
+# attributes_visualization(new_dataframe, columns, hue=['Day', 'Month', 'Year', 'Quarter', 'WeekDay'])
+# attributes_visualization(new_dataframe, columns)
+# plot_rolling(dataframe['Close'], window=7)
 # decompose_series(dataframe['Close'], mode='multiplicative')
 # check_stationarity(dataframe['Close'])
-granger_test(dataframe, 'Close')
+# granger_test(dataframe, 'Close')
 # del new_dataframe, dataframe, columns
 
 train_stock, valid_stock, test_stock = dataset_division(shift_dataset(time_series))

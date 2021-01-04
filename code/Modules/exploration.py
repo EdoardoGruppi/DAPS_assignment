@@ -1,9 +1,10 @@
 # Import packages
-from pandas import DataFrame
+from pandas import DataFrame, set_option
 import numpy as np
 import matplotlib
 import matplotlib.pyplot as plt
 import seaborn as sn
+set_option('display.max_columns', None)
 
 
 def change_format(dataset):
@@ -28,8 +29,12 @@ def attributes_visualization(df, columns, hue=None):
     figure.tight_layout()
     plt.show()
     # Plot the pairwise joint distributions
-    for label in hue:
-        sn.pairplot(df[columns].join(df[label]), hue=label)
+    if hue is not None:
+        for label in hue:
+            sn.pairplot(df[columns].join(df[label]), hue=label)
+            plt.show()
+    else:
+        sn.pairplot(df[columns])
         plt.show()
 
 

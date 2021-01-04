@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 from pandas import to_pickle, DataFrame, read_pickle, DatetimeIndex
 import os
 import seaborn as sn
-from Modules.utilities import detect_univariate_outlier, multivariate_visualization, detect_multivariate_outlier
+from Modules.utilities import detect_univariate_outlier, multivariate_visualization, detect_multivariate_outlier, scatter_plot
 
 
 def get_daily_time_series(filename='Time_series'):
@@ -107,7 +107,8 @@ def time_series_preprocessing(time_series, method='linear', cap=None, nan=False,
     # is usually used to estimate historical correlation and volatility of companies stocks. The adjusted
     # closing price analyses the stock's dividends, stock splits and new stock offerings to determine an adjusted value.
     # Plot relationships between the features. Almost perfectly correlated features may be represented by only one var.
-    # todo -- multivariate_visualization(time_series.drop(['Dividend', 'Split'], axis=1))
+    # scatter_plot(time_series, ['Open', 'Close'])
+    # todo -- multivariate_visualization(time_series.drop(['Dividend', 'Split', 'Original Close', '_id'], axis=1))
     time_series = time_series[['Close', 'Volume']]
     # Detect outliers
     # todo -- detect_univariate_outlier(time_series, cap=cap, nan=nan)

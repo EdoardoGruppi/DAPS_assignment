@@ -89,15 +89,15 @@ def multivariate_visualization(dataframe):
     sn.set(font_scale=1)
     # Use number instead of columns to get a tidier layout
     labels = np.arange(dataframe.shape[1])
-    fig, axes = plt.subplots(1, 2, sharex='all', figsize=(8, 4))
+    fig, axes = plt.subplots(1, 2, sharex='all', figsize=(16, 8))
     # Pearson correlation matrix
     pearson_matrix = dataframe.corr(method='pearson')
     sn.heatmap(pearson_matrix, annot=True, linewidths=2, cmap='GnBu_r', cbar=False, square=True, ax=axes[0],
-               xticklabels=labels, yticklabels=labels, vmax=1, vmin=-1)
+               xticklabels=labels, yticklabels=labels, vmax=1.5, vmin=-1, fmt='.2f', annot_kws={'c': 'k'})
     # Spearman correlation matrix
     corr_matrix = dataframe.corr(method='spearman')
-    sn.heatmap(corr_matrix, annot=True, linewidths=2, cmap='GnBu_r', cbar=False, square=True, ax=axes[1],
-               xticklabels=labels, yticklabels=labels, vmax=1, vmin=-1)
+    sn.heatmap(corr_matrix, annot=True, linewidths=2, cmap='OrRd', cbar=False, square=True, ax=axes[1],
+               xticklabels=labels, yticklabels=labels, vmax=1.5, vmin=-1, fmt='.2f', annot_kws={'c': 'k'})
     plt.show()
     # Scatter plot matrix
     g = sn.pairplot(dataframe, plot_kws=dict(s=10), diag_kind='hist', diag_kws=dict(kde=True, bins=50))
@@ -512,3 +512,16 @@ def detect_multivariate_outlier(data, clf='iforest', contamination=0.03):
     scores = clf.decision_scores_
     index = np.where(labels == 1)
     return data.index[index]
+
+
+def scatter_plot(dataframe, columns):
+    """
+    Simple functions to plot a scatter_plot plot between two columns of a given dataframe.
+
+    :param dataframe: dataframe that contains the columns needed.
+    :param columns: list of names definining the columns to visualize in the scatter plot.
+    :return:
+    """
+    sn.set(rc={'figure.figsize': (6, 6)})
+    sn.scatterplot(data=dataframe, x=columns[0], y=columns[1])
+    plt.show()
