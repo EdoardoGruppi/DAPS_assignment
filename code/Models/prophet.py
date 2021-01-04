@@ -111,6 +111,7 @@ def prophet_results(forecast, data_train, data_test):
     ax.plot(test.index, test.yhat, color='coral', lw=1)
     ax.fill_between(test.index, test.yhat_lower, test.yhat_upper, color='coral', alpha=0.3)
     ax.axvline(forecast.loc[start_test, 'ds'], color='k', ls='--', alpha=0.7)
+    plt.tight_layout()
     plt.show()
     # Plot comparison focusing on the days predicted
     # The plot will display the last part of the series
@@ -128,6 +129,7 @@ def prophet_results(forecast, data_train, data_test):
     ax.plot(test.index, test.yhat, color='coral', lw=2)
     ax.fill_between(test.index, test.yhat_lower, test.yhat_upper, color='coral', alpha=0.3)
     ax.axvline(forecast.loc[start_test, 'ds'], color='k', ls='--', alpha=0.7)
+    plt.tight_layout()
     plt.show()
     # todo -- Joint plot between the true and predicted values
     # sn.jointplot(x='yhat', y='y', data=train, kind="reg", color="b")
@@ -137,6 +139,7 @@ def prophet_results(forecast, data_train, data_test):
     # sn.jointplot(x='yhat', y='y', data=test, kind="reg", color="b")
     # plt.xlabel('Predictions')
     # plt.ylabel('Observations')
+    # plt.tight_layout()
     # plt.show()
     # Visualize residuals properties
     residuals_properties(residuals)

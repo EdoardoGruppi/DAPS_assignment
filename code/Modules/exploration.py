@@ -22,20 +22,20 @@ def change_format(dataset):
 def attributes_visualization(df, columns, hue=None):
     print('Preview of data:\n', df.tail(3), '\nInfo:\n', df.info(), '\nDistribution:\n', df.describe().T)
     sn.set()
-    figure = plt.figure(figsize=(10, 4))
+    figure = plt.figure(figsize=(16, 8))
     for index, col in enumerate(columns):
         figure.add_subplot(1, len(columns), index+1)
         sn.boxplot(y=col, data=df)
-    figure.tight_layout()
+        figure.tight_layout()
     plt.show()
     # Plot the pairwise joint distributions
     if hue is not None:
         for label in hue:
             sn.pairplot(df[columns].join(df[label]), hue=label)
-            plt.show()
     else:
         sn.pairplot(df[columns])
-        plt.show()
+    figure.tight_layout()
+    plt.show()
 
 
 def plot_rolling(series, window=12):

@@ -36,18 +36,21 @@ covid = covid_preprocessing(covid_dir, daily_change=True)
 # Change the column names that can create conflicts
 news.name = 'Mood'
 # Create a unified dataset
-dataframe = combine_dataset([time_series, covid, tweets, news])
+dataframe = combine_dataset([time_series, tweets, news, covid])
 dataframe = shift_dataset(dataframe)
 train, valid, test = dataset_division(dataframe)
 del time_series_dir, covid_dir, news_dir, tweets_dir
 
 # DATA EXPLORATION =====================================================================================================
 dataframe, new_dataframe, columns = change_format(concat([train, valid]))
-# multivariate_visualization(dataframe)
-# attributes_visualization(new_dataframe, columns, hue=['Day', 'Month', 'Year', 'Quarter', 'WeekDay'])
-# attributes_visualization(new_dataframe, columns)
-# plot_rolling(dataframe['Close'], window=7)
+# Search seasonality in the data
 # decompose_series(dataframe['Close'], mode='multiplicative')
+# attributes_visualization(new_dataframe, columns, hue=['Day', 'Month', 'Year', 'Quarter', 'WeekDay'])
+# plot_auto_correlation(dataframe['Close'], partial=False, lags=365)
+
+# multivariate_visualization(dataframe)
+# plot_rolling(dataframe['Close'], window=7)
+
 # check_stationarity(dataframe['Close'])
 # granger_test(dataframe, 'Close')
 # del new_dataframe, dataframe, columns
@@ -58,12 +61,12 @@ train, valid, test = transform_dataset(train, valid, test, algorithm='pca', n_co
 
 # DATA INFERENCE =======================================================================================================
 # Validate and compare models using only company's stock data
-prophet_predictions(train_stock, valid_stock, regressor=True, mode='multiplicative', holidays=False)
-# arima = arima_predictions(train_stock, valid_stock, regressor=True)
+# prophet_predictions(train_stock, valid_stock, regressor=True, mode='multiplicative', holidays=False)
+arima = arima_predictions(train_stock, valid_stock, regressor=True)
 # The validation split is used to set all the hyper-parameters that cannot be found with grid search algorithms
 train_stock = concat([train_stock, valid_stock])
-prophet_predictions(train_stock, test_stock, regressor=True, mode='multiplicative', holidays=False)
-# arima_test(model=arima, train=train_stock, test=test_stock, regressor=True)
+# prophet_predictions(train_stock, test_stock, regressor=True, mode='multiplicative', holidays=False)
+arima_test(model=arima, train=train_stock, test=test_stock, regressor=True)
 # Remake the prediction using the model that led to best results in the previous step
 train = concat([train, valid])
-prophet_predictions(train, test, regressor=True, mode='multiplicative', holidays=False)
+# prophet_predictions(train, test, regressor=True, mode='multiplicative', holidays=False)

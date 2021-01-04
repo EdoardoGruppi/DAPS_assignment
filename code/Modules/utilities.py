@@ -282,7 +282,7 @@ def residuals_properties(residuals):
           f'\n - Shapiro p-value: {shapiro:.4f}\n - Anderson p-value: {anderson:.4f}\n')
     # Create plots
     sn.set()
-    fig, axes = plt.subplots(1, 5, figsize=(25, 5))
+    fig, axes = plt.subplots(1, 5, figsize=(25, 5.3))
     # Compute standardized residuals
     residuals = (residuals - np.nanmean(residuals)) / np.nanstd(residuals)
     # First picture: q-q plot
@@ -302,10 +302,11 @@ def residuals_properties(residuals):
     axes[2].plot(x, kde(x), label='Residuals', lw=2)
     axes[2].set_xlim(x_lim)
     axes[2].legend()
-    axes[2].set_title('Histogram plus estimated density')
+    axes[2].set_title('Estimated density')
     # Last pictures: residuals auto-correlation plots
     plot_acf(residuals, ax=axes[3], lags=30)
     plot_pacf(residuals, ax=axes[4], lags=30)
+    fig.tight_layout()
     plt.show()
 
 
@@ -335,20 +336,29 @@ def check_stationarity(time_series):
             break
 
 
-def plot_auto_correlation(series, title=None):
+def plot_auto_correlation(series, title=None, lags=None, partial=True):
     """
     Plots the auto correlation functions of the series provided.
 
     :param series: time series to analyse.
+    :param lags: an int or array of lag values, used on horizontal axis. default_value=None
     :param title: title (optional) of the picture. default_value=None
+    :param partial: if True the partial auto correlation functions is plotted as well as. default_value=True
     :return:
     """
     sn.set()
-    fig, axes = plt.subplots(1, 2, sharey='all', figsize=(13, 5))
+    if partial:
+        fig, axes = plt.subplots(1, 2, sharey='all', figsize=(13, 5))
+        plot_acf(series, ax=axes[0], lags=lags)
+        plot_pacf(series, ax=axes[1], lags=lags)
+    else:
+        fig, ax = plt.subplots(figsize=(20, 5))
+        plot_acf(series, ax=ax, lags=lags, title=None)
+        plt.xlim([-5, lags+5])
+        plt.ylim([-0.1, 1.1])
     if title is not None:
         fig.suptitle(title)
-    plot_acf(series, ax=axes[0])
-    plot_pacf(series, ax=axes[1])
+    fig.tight_layout()
     plt.show()
 
 
@@ -385,9 +395,18 @@ def decompose_series(series, period=None, mode='multiplicative'):
     """
     sn.set()
     result = seasonal_decompose(series, model=mode, period=period)
-    result.plot().set_figwidth(15)
-    print(f'{mode}: [mean: {result.seasonal.mean()}, max:{result.seasonal.max()}, min:{result.seasonal.min()}]')
+    fig, axes = plt.subplots(ncols=1, nrows=4, sharex='all', figsize=(14, 10))
+    result.observed.plot(ax=axes[0], legend=False)
+    axes[0].set_ylabel('Observed')
+    result.trend.plot(ax=axes[1], legend=False)
+    axes[1].set_ylabel('Trend')
+    result.seasonal.plot(ax=axes[2], legend=False)
+    axes[2].set_ylabel('Seasonal')
+    result.resid.plot(ax=axes[3], legend=False)
+    axes[3].set_ylabel('Residual')
+    fig.tight_layout()
     plt.show()
+    print(f'{mode}: [mean: {result.seasonal.mean()}, max:{result.seasonal.max()}, min:{result.seasonal.min()}]')
     residuals_properties(result.resid.dropna())
 
 

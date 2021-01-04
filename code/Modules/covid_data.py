@@ -45,10 +45,10 @@ def covid_preprocessing(df_path, daily_change=True):
     dataframe = dataframe.drop(['confirmed', 'deaths', 'recovered'], axis=1)
     if daily_change:
         # Compute the daily movement percentage of the active cases after replacing missing values with 0 where detected
-        dataframe['Pct_change'] = dataframe.active.pct_change(periods=1).fillna(0)
+        dataframe['Covid'] = dataframe.active.pct_change(periods=1).fillna(0)
         # Since in some situations the cases pass from 0 to an integer the daily change is considered inf. This could
         # create problems subsequently. Hence, those values are replaced with a symbolic daily change of 100%.
-        dataframe.Pct_change = dataframe.Pct_change.replace(np.inf, 1)
+        dataframe.Covid = dataframe.Covid.replace(np.inf, 1)
         # The new dataframe is composed only by daily_changes
-        dataframe = dataframe.Pct_change
+        dataframe = dataframe.Covid
     return dataframe

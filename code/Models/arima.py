@@ -104,27 +104,30 @@ def arima_results(results, conf, data_train, data_test, residual):
     # Plot comparison between forecasting results and predictions
     sn.set()
     f, ax = plt.subplots(figsize=(14, 8))
-    ax.plot(data_train.index, data_train.Close, 'ko', markersize=3)
+    ax.plot(data_train.index, data_train.Close, 'ko', markersize=3, color='k')
     ax.plot(results.index, results.y, 'ro', markersize=3)
     ax.plot(results.index, results.y_hat, color='coral', lw=1)
     ax.fill_between(results.index, results.y_hat_lower, results.y_hat_upper, color='coral', alpha=0.3)
     ax.axvline(results.head(1).index, color='k', ls='--', alpha=0.7)
+    plt.tight_layout()
     plt.show()
     # Plot comparison focusing on the period of the days predicted
     # The plot will display the last part of the series
     sn.set()
-    f, ax = plt.subplots(figsize=(12, 6))
+    f, ax = plt.subplots(figsize=(14, 8))
     samples = data_test.shape[0] * 5
     ax.plot(data_train.tail(samples).index, data_train.tail(samples).Close, marker='o', markersize=4, color='k')
     ax.plot(results.index, results.y, marker='o', markersize=4, color='r')
     ax.plot(results.index, results.y_hat, color='coral', lw=2)
     ax.fill_between(results.index, results.y_hat_lower, results.y_hat_upper, color='coral', alpha=0.3)
     ax.axvline(results.head(1).index, color='k', ls='--', alpha=0.7)
+    plt.tight_layout()
     plt.show()
     # Joint plot between the true and predicted values
     sn.jointplot(x='y_hat', y='y', data=results, kind="reg", color="b")
     plt.xlabel('Predictions')
     plt.ylabel('Observations')
+    plt.tight_layout()
     plt.show()
     # Visualize residuals properties
     residuals_properties(residual)
