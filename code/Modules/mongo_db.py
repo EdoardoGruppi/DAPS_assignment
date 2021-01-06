@@ -9,7 +9,7 @@ import os
 client = MongoClient(mongo_key)
 database = client['DAPS_assignment']
 # Filename of all the files to save inside the cloud
-filenames = ['Covid', f'{company}_twitter', 'News', 'Time_series']
+filenames = ['Covid', f'{company}_twitter', 'News', 'Time_series', 'Indexes']
 
 
 def upload_datasets():
@@ -40,6 +40,7 @@ def download_datasets():
         dataset = list(database[filename].find({}))
         # Parse the entire collection from json files to a single dataframe
         dataframe = json_normalize(dataset)
+        dataframe = dataframe.drop(['_id'], axis=1)
         # Save the dataframe in the pickle format
         dataframe_path = os.path.join(base_dir, f'{filename}.pkl')
         to_pickle(dataframe, dataframe_path)

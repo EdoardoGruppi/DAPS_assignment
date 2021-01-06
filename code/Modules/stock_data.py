@@ -1,18 +1,18 @@
 # Import packages
-from Modules.config import *
 from alpha_vantage.timeseries import TimeSeries
 from alpha_vantage.techindicators import TechIndicators
-import matplotlib.pyplot as plt
-from pandas import to_pickle, DataFrame, read_pickle, DatetimeIndex
-import os
-import seaborn as sn
-from Modules.utilities import detect_univariate_outlier, multivariate_visualization, detect_multivariate_outlier, scatter_plot
+from Modules.utilities import *
+from pandas import DataFrame, concat, to_pickle
+import pandas_datareader as pdr
+from datetime import date
+from Modules.config import *
 
 
 def get_daily_time_series(filename='Time_series'):
     """
     Gets the daily stock movements of the company and from the starting date selected in the config.py
 
+    :param filename: name to assign when saving the file. default_value='Time_series'
     :return: the path of the directory in which the data are stored.
     """
     ts = TimeSeries(key=alpha_vantage_api_key, output_format='pandas', indexing_type='date')
@@ -84,12 +84,14 @@ def get_multiple_indicators(indicators, time_period=20):
     return data_directory
 
 
-def time_series_preprocessing(time_series, method='linear', cap=None, nan=False, path=True, multi=False):
+def time_series_preprocessing(time_series, indexes, method='linear', cap=None, nan=False, path=True, multi=False):
     """
     Pre-processes the time series dropping and combining columns. It allows also to operate outliers and missing values.
 
     :param time_series: name or path of the file where the time series is saved according to the value of the boolean
         argument path.
+    :param indexes: name or path of the file where the time series related to the indexes is saved according to the
+        value of the boolean argument path.
     :param method: interpolation method. default_value='linear'
     :param cap: state if univariate outliers have to be modified. It can be 'z-score' or 'iqr' to express which outliers
         to change. default_value=None
@@ -102,14 +104,17 @@ def time_series_preprocessing(time_series, method='linear', cap=None, nan=False,
     """
     if path:
         time_series = read_pickle(time_series)
+        indexes = read_pickle(indexes)
     time_series = time_series.set_index('date')
+    indexes = indexes.set_index('Date')
+    time_series = combine_dataset([time_series, indexes])
     # Discard some columns that are not necessary like close, dividend amounts and split. In particular, adjusted close
     # is usually used to estimate historical correlation and volatility of companies stocks. The adjusted
     # closing price analyses the stock's dividends, stock splits and new stock offerings to determine an adjusted value.
     # Plot relationships between the features. Almost perfectly correlated features may be represented by only one var.
-    # scatter_plot(time_series, ['Open', 'Close'])
-    # todo -- multivariate_visualization(time_series.drop(['Dividend', 'Split', 'Original Close', '_id'], axis=1))
-    time_series = time_series[['Close', 'Volume']]
+    # todo -- multivariate_visualization(time_series.drop(['Dividend', 'Split', 'Original Close'], axis=1))
+    # scatter_plot(time_series, ['Open', 'High'])
+    time_series = time_series[['Close', 'Volume', 'S&p 100']]
     # Detect outliers
     # todo -- detect_univariate_outlier(time_series, cap=cap, nan=nan)
     if multi:
@@ -122,3 +127,34 @@ def time_series_preprocessing(time_series, method='linear', cap=None, nan=False,
     # Interpolate to substitute each NaN with a likely value
     time_series = time_series.interpolate(method=method)
     return time_series
+
+
+def get_indexes(filename='Indexes'):
+    """
+    Gets the daily movements of S&P 100 and 500 along with Dow Jones 30.
+
+    :param filename: name to assign when saving the file. default_value='Indexes'
+    :return: the path of the directory in which the data are stored.
+    """
+    # List of indexes to retrieve
+    indexes = ['^OEX', '^GSPC', '^DJI']
+    # Empty list of dataframes. Then there will be one for each index
+    dataframes = []
+    for index in indexes:
+        df = pdr.get_data_yahoo(index, start=starting_date, end=date.today())['Adj Close']
+        dataframes.append(DataFrame(data={index: df.values}, index=df.index))
+    # Concatenate dataframes
+    dataframe = concat(dataframes, axis=1)
+    # Rename columns
+    dataframe = dataframe.rename(columns={'^OEX': 'S&p 100', '^GSPC': 'S&p 500', '^DJI': 'Dow Jones'})
+    # Reset index to retain the date of the measurement
+    dataframe.reset_index(level=0, inplace=True)
+    # Save the dataset acquired in a pickle file
+    data_directory = os.path.join(base_dir, f'{filename}.pkl')
+    to_pickle(dataframe, data_directory)
+    return data_directory
+
+# volatility = time_series.Close.rolling(window=365, min_periods=1).std()
+# time_series.Close /= volatility
+# decompose_series(time_series.Close)
+# decompose_series(time_series.Close)

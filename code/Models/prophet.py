@@ -145,3 +145,32 @@ def prophet_results(forecast, data_train, data_test):
     residuals_properties(residuals)
     # Evaluate model prediction capability through a series of metrics
     metrics(test.y, test.yhat)
+
+
+# def p_p(train, test, mode='multiplicative', sps=10, cps=0.1, interval=0.95, n_change_points=25):
+#     # Prepare data as required by Prophet
+#     data = prepare_data(train, 'Close')
+#
+#     forecast = None
+#     for day in range(1, test.shape[0]+1):
+#         model = Prophet(seasonality_mode=mode, yearly_seasonality=False, weekly_seasonality=False,
+#                         interval_width=interval, daily_seasonality=False, seasonality_prior_scale=sps,
+#                         changepoint_prior_scale=cps, n_changepoints=n_change_points)
+#         # Select the columns related only to the exogenous variables
+#         columns = [col for col in train.columns if col != 'Close']
+#         # Add each additional variable as a regressor
+#         for col in columns:
+#             model.add_regressor(col)
+#         exogenous = concat([train[columns], test[columns].head(day)])
+#         # Train the model
+#         model.fit(data)
+#         # Specify the number of days in the future to predict
+#         future = model.make_future_dataframe(periods=1, freq='1D')
+#         # Add the regressor values within the test period
+#         exogenous = exogenous.reset_index().rename(columns={'date': 'ds'}).drop('ds', axis=1)
+#         future = concat([future, exogenous], axis=1)
+#         # Make the prediction with the Prophet model
+#         forecast = model.predict(future)
+#         data = concat([data, forecast])
+#     # Visualize the results obtained
+#     prophet_results(forecast, train, test)

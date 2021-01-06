@@ -1,5 +1,5 @@
 # Import packages
-from Modules.stock_data import get_daily_time_series, get_multiple_indicators
+from Modules.stock_data import get_daily_time_series, get_indexes
 from Modules.config import *
 from Modules.twitter_data import get_tweets, set_query
 from Modules.news_data import get_news_tweeted
@@ -7,6 +7,7 @@ from Modules.covid_data import get_covid_data
 
 # Stock Dataset ========================================================================================================
 time_series_dir = get_daily_time_series(filename='Time_series')
+indexes_dir = get_indexes(filename='Indexes')
 
 # Tweet Dataset ========================================================================================================
 # Create query to search specific tweets

@@ -98,10 +98,12 @@ def multivariate_visualization(dataframe):
     corr_matrix = dataframe.corr(method='spearman')
     sn.heatmap(corr_matrix, annot=True, linewidths=2, cmap='OrRd', cbar=False, square=True, ax=axes[1],
                xticklabels=labels, yticklabels=labels, vmax=1.5, vmin=-1, fmt='.2f', annot_kws={'c': 'k'})
+    plt.tight_layout()
     plt.show()
     # Scatter plot matrix
     g = sn.pairplot(dataframe, plot_kws=dict(s=10), diag_kind='hist', diag_kws=dict(kde=True, bins=50))
     g.map_upper(sn.kdeplot, levels=4)
+    plt.tight_layout()
     plt.show()
 
 
@@ -354,7 +356,7 @@ def plot_auto_correlation(series, title=None, lags=None, partial=True):
     else:
         fig, ax = plt.subplots(figsize=(20, 5))
         plot_acf(series, ax=ax, lags=lags, title=None)
-        plt.xlim([-5, lags+5])
+        plt.xlim([-5, lags + 5])
         plt.ylim([-0.1, 1.1])
     if title is not None:
         fig.suptitle(title)
@@ -381,6 +383,13 @@ def granger_test(dataframe, target_column, max_lag=1, test='ssr_ftest'):
         dictionary = grangercausalitytests(dataframe[[target_column, col_name]], maxlag=max_lag)
         results.append(Series([item[0][test][1] for item in dictionary.values()], name=col_name))
     results = concat(results, axis=1)
+    sn.set()
+    height = max_lag * 1.5
+    fig = plt.figure(figsize=(6, height))
+    sn.heatmap(results, annot=True, linewidths=2, cmap='GnBu_r', cbar=False, square=True, fmt='.2f',
+               annot_kws={'c': 'k'}, vmax=1, vmin=-0.5)
+    plt.tight_layout()
+    plt.show()
     print(results)
 
 
@@ -543,4 +552,5 @@ def scatter_plot(dataframe, columns):
     """
     sn.set(rc={'figure.figsize': (6, 6)})
     sn.scatterplot(data=dataframe, x=columns[0], y=columns[1])
+    plt.tight_layout()
     plt.show()
