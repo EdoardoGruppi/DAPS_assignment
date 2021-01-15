@@ -1,10 +1,11 @@
 # Import packages
 from pandas import DataFrame, set_option
-import numpy as np
-import matplotlib
+from numpy import percentile as compute_percentile
 import matplotlib.pyplot as plt
 import seaborn as sn
-
+from numpy import sqrt, abs, round
+from scipy.stats import norm
+from Modules.utilities import plot_attribute_properties
 set_option('display.max_columns', None)
 
 
@@ -39,13 +40,76 @@ def attributes_visualization(df, columns, hue=None):
     plt.show()
 
 
-def plot_rolling(series, short_window=20, long_window=50):
-    fig, axes = plt.subplots(2, 1, sharex='all', figsize=(25, 15))
-    sn.lineplot(data=series.rolling(window=short_window, min_periods=1).mean(), ax=axes[0])
-    sn.lineplot(data=series.ewm(span=short_window, adjust=False).mean(), ax=axes[0])
-    sn.lineplot(data=series, ax=axes[0])
-    sn.lineplot(data=series.rolling(window=long_window, min_periods=1).mean(), ax=axes[1])
-    sn.lineplot(data=series.ewm(span=long_window, adjust=False).mean(), ax=axes[1])
-    sn.lineplot(data=series, ax=axes[1])
-    plt.tight_layout()
-    plt.show()
+def custom_test_1(series, second_series, significance_level=0.05, threshold=0.15, test=0):
+    """
+    H0: The sentiment extracted from Twitter posts does not affect the daily percentage variation of the stock closing
+    price.
+
+    :param test:
+    :param threshold:
+    :param series:
+    :param second_series:
+    :param significance_level:
+    :return:
+    """
+    dataframe = DataFrame([series, second_series]).transpose()
+    sample1 = dataframe[dataframe.iloc[:, 1] > threshold].iloc[:, 0]
+    sample2 = dataframe[dataframe.iloc[:, 1] <= threshold].iloc[:, 0]
+    # Compute mean, std and size of each sample
+    mean1, mean2 = sample1.mean(), sample2.mean()
+    sigma1, sigma2 = sample1.std(), sample2.std()
+    size1, size2 = sample1.shape[0], sample2.shape[0]
+    two_samples_t_test(mean1, mean2, sigma1, sigma2, size1, size2, significance_level, test)
+
+
+def custom_test_2(series, second_series, significance_level=0.05, percentile=90, test=0):
+    """
+    H0: The higher 20% of the sentiment extracted from Twitter posts does not affect the daily percentage
+    variation of the stock closing price.
+
+    :param test:
+    :param percentile:
+    :param series:
+    :param second_series:
+    :param significance_level:
+    :return:
+    """
+    dataframe = DataFrame([series, second_series]).transpose()
+    percentile = compute_percentile(second_series, percentile)
+    sample1 = dataframe[dataframe.iloc[:, 1] > percentile].iloc[:, 0]
+    sample2 = dataframe[dataframe.iloc[:, 1] <= percentile].iloc[:, 0]
+    # Compute mean, std and size of each sample
+    mean1, mean2 = sample1.mean(), sample2.mean()
+    sigma1, sigma2 = sample1.std(), sample2.std()
+    size1, size2 = sample1.shape[0], sample2.shape[0]
+    two_samples_t_test(mean1, mean2, sigma1, sigma2, size1, size2, significance_level, test)
+
+
+def two_samples_t_test(mean1, mean2, sigma1, sigma2, size1, size2, significance_level=0.05, test=0):
+    overall_sigma = sqrt(sigma1 ** 2 / size1 + sigma2 ** 2 / size2)
+    z_statistic = round((mean1 - mean2) / overall_sigma, 5)
+    if test == 0:
+        # Two tails -> H0:x1=x2 H1:x1!=x2
+        print('\nTwo Tails test. H0 is x1=x2 and H1 is x1!=x2')
+        p_value = round(2 * (1 - norm.cdf(abs(z_statistic))), 5)
+    elif test == 1:
+        # One tail right -> H0:x1>x2 H1:x1<=x2
+        print('\nOne Tail test. H0 is x1>x2 and H1 is x1<=x2')
+        p_value = round((1 - norm.cdf(z_statistic)), 5)
+    else:
+        # One tail left -> H0:x1<x2 H1:x1>=x2
+        print('\nOne Tail test. H0 is x1<x2 and H1 is x1>=x2')
+        p_value = round((norm.cdf(z_statistic)), 5)
+    if p_value < significance_level:
+        print(f'Statistic:{z_statistic} - P-value:{p_value} - Reject Null Hypothesis')
+    else:
+        print(f'Statistic:{z_statistic} - P-value:{p_value} - Do Not Reject Null Hypothesis')
+
+
+def percentage_change(dataframe, cols):
+    columns = dataframe.columns
+    columns = [item for item in columns if item not in cols]
+    dataframe_pct = dataframe.copy()
+    for col in columns:
+        dataframe_pct[col] = dataframe[col].pct_change(periods=1).fillna(0)
+    return dataframe_pct

@@ -137,7 +137,7 @@ def tweet_preprocessing(df_path, analysis='vader', like_weight=0, reply_weight=0
     if move != 0:
         # 16:00 pm in NewYork (closing time of the nasdaq market corresponds) to 21:00 pm in London.
         # To consider the influence that a tweet has only in a particular session, e.g. that takes place the day after.
-        tweets['date'] = tweets['date'].apply(lambda x: x + timedelta(days=1) if x.hour > move else x)
+        tweets['date'] = tweets['date'].apply(lambda x: x + timedelta(days=1) if x.hour >= move else x)
     # Clean the text of each tweet
     tweets['tweet'] = tweets['tweet'].apply(clean_tweets)
     # Select and apply the analysis function required

@@ -84,6 +84,32 @@ def get_multiple_indicators(indicators, time_period=20):
     return data_directory
 
 
+def get_indexes(filename='Indexes'):
+    """
+    Gets the daily movements of S&P 100 and 500 along with Dow Jones 30.
+
+    :param filename: name to assign when saving the file. default_value='Indexes'
+    :return: the path of the directory in which the data are stored.
+    """
+    # List of indexes to retrieve
+    indexes = ['^OEX', '^GSPC', '^DJI']
+    # Empty list of dataframes. Then there will be one for each index
+    dataframes = []
+    for index in indexes:
+        df = pdr.get_data_yahoo(index, start=starting_date, end=date.today())['Adj Close']
+        dataframes.append(DataFrame(data={index: df.values}, index=df.index))
+    # Concatenate dataframes
+    dataframe = concat(dataframes, axis=1)
+    # Rename columns
+    dataframe = dataframe.rename(columns={'^OEX': 'S&p 100', '^GSPC': 'S&p 500', '^DJI': 'Dow Jones'})
+    # Reset index to retain the date of the measurement
+    dataframe.reset_index(level=0, inplace=True)
+    # Save the dataset acquired in a pickle file
+    data_directory = os.path.join(base_dir, f'{filename}.pkl')
+    to_pickle(dataframe, data_directory)
+    return data_directory
+
+
 def time_series_preprocessing(time_series, indexes, method='linear', cap=None, nan=False, path=True, multi=False):
     """
     Pre-processes the time series dropping and combining columns. It allows also to operate outliers and missing values.
@@ -129,32 +155,10 @@ def time_series_preprocessing(time_series, indexes, method='linear', cap=None, n
     return time_series
 
 
-def get_indexes(filename='Indexes'):
-    """
-    Gets the daily movements of S&P 100 and 500 along with Dow Jones 30.
-
-    :param filename: name to assign when saving the file. default_value='Indexes'
-    :return: the path of the directory in which the data are stored.
-    """
-    # List of indexes to retrieve
-    indexes = ['^OEX', '^GSPC', '^DJI']
-    # Empty list of dataframes. Then there will be one for each index
-    dataframes = []
-    for index in indexes:
-        df = pdr.get_data_yahoo(index, start=starting_date, end=date.today())['Adj Close']
-        dataframes.append(DataFrame(data={index: df.values}, index=df.index))
-    # Concatenate dataframes
-    dataframe = concat(dataframes, axis=1)
-    # Rename columns
-    dataframe = dataframe.rename(columns={'^OEX': 'S&p 100', '^GSPC': 'S&p 500', '^DJI': 'Dow Jones'})
-    # Reset index to retain the date of the measurement
-    dataframe.reset_index(level=0, inplace=True)
-    # Save the dataset acquired in a pickle file
-    data_directory = os.path.join(base_dir, f'{filename}.pkl')
-    to_pickle(dataframe, data_directory)
-    return data_directory
-
-# volatility = time_series.Close.rolling(window=365, min_periods=1).std()
+# volatility = time_series.Close.rolling(window=10, min_periods=10).std().replace(0, np.nan).bfill()
 # time_series.Close /= volatility
 # decompose_series(time_series.Close)
-# decompose_series(time_series.Close)
+#
+# volatility = series.rolling(window=365, min_periods=1).std().replace(0, np.nan).bfill()
+# ajeje = series.values / volatility
+# residuals_properties(ajeje)
