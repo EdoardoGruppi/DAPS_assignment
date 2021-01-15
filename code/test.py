@@ -30,15 +30,14 @@ news = read_pickle(news_dir)
 
 # DATA PREPROCESSING ===================================================================================================
 stock_data = time_series_preprocessing(time_series_dir, indexes_dir, path=True)
-# ohlc_chart(data=time_series, candle_size='10D', start=starting_date, end=ending_date, volume=False)
-# tweets = tweet_preprocessing(df_path=tweets_dir, analysis='vader', like_weight=0, reply_weight=0, retweet_weight=0)
-# news = tweet_preprocessing(df_path=news_dir, analysis='flair', like_weight=0, reply_weight=0, retweet_weight=0)
+# ohlc_chart(data=read_pickle(time_series_dir), candle_size='10D', start=starting_date, end=ending_date, volume=False)
+# tweets = tweet_preprocessing(tweets_dir, analysis='vader', like_weight=0, reply_weight=0, retweet_weight=0, move=21)
+# news = tweet_preprocessing(news_dir, analysis='flair', like_weight=0, reply_weight=0, retweet_weight=0, move=21)
 covid = covid_preprocessing(covid_dir, daily_change=True)
 # Change the column names that can create conflicts
 news.name = 'Mood'
 # Create a unified dataset
 dataframe = combine_dataset([stock_data, tweets, news, covid])
-dataframe = shift_dataset(dataframe)
 train, valid, test = dataset_division(dataframe)
 del time_series_dir, covid_dir, news_dir, tweets_dir
 
@@ -48,26 +47,45 @@ dataframe, new_dataframe, columns = change_format(concat([train, valid]))
 # decompose_series(dataframe.Close, mode='multiplicative')
 # attributes_visualization(new_dataframe, columns, hue=['Day', 'Month', 'Year', 'Quarter', 'WeekDay'])
 # plot_auto_correlation(dataframe.Close, partial=False, lags=365)
-
 # Visualize attribute relationships
 # attributes_visualization(new_dataframe, columns, hue=None)
 # multivariate_visualization(dataframe)
-# granger_test(dataframe, 'Close', max_lag=3)
-# plot_rolling(dataframe['Close'], short_window=14, long_window=92)
+# scatter_plot(dataframe, ['Mood', 'Close'])
+# plot_rolling(dataframe['Close'], short_window=14, long_window=90)
 # check_stationarity(dataframe['Close'])
-# del new_dataframe, dataframe, columns
-train_stock, valid_stock, test_stock = dataset_division(shift_dataset(stock_data))
+
+dataframe_pct = percentage_change(dataframe, ['Covid'])
+# Independence of the observations so that there is no relationship between the observations in each group.
+# plot_auto_correlation(time_series_change)
+custom_test_1(dataframe_pct.Close, dataframe_pct.Sentiment, threshold=0.10, significance_level=0.06, test=1)
+custom_test_2(dataframe_pct.Close, dataframe.Volume, percentile=65, test=2)
+custom_test_2(dataframe_pct.Close, dataframe_pct.Volume, percentile=10, test=2)
+custom_test_1(dataframe_pct.Sentiment, dataframe.Covid, threshold=0.35, significance_level=0.06, test=2)
+custom_test_2(dataframe_pct.Close, dataframe_pct['S&p 100'], percentile=0.10, test=1)
+custom_test_1(dataframe_pct.Volume, dataframe.Covid, threshold=0.90, significance_level=0.05, test=2)
+custom_test_2(dataframe_pct.Volume, dataframe_pct.Sentiment, percentile=50, test=1)
+custom_test_2(dataframe_pct.Sentiment, dataframe.Volume, percentile=40, significance_level=0.07, test=2)
+custom_test_2(dataframe.Covid, dataframe_pct.Sentiment, percentile=90, test=0)
+custom_test_2(dataframe_pct.Close, dataframe.Sentiment, percentile=50, test=1)
+
+del new_dataframe, dataframe, columns
+train = train.drop(['Mood'], axis=1)
+valid = valid.drop(['Mood'], axis=1)
+test = test.drop(['Mood'], axis=1)
+train_stock, valid_stock, test_stock = dataset_division(stock_data.drop(['S&p 100'], axis=1))
 train_stock, valid_stock, test_stock = transform_dataset(train_stock, valid_stock, test_stock, reduction=False)
 train, valid, test = transform_dataset(train, valid, test, algorithm='pca', n_components=0.90, reduction=True)
 
 # DATA INFERENCE =======================================================================================================
 # Validate and compare models using only company's stock data
 prophet_predictions(train_stock, valid_stock, regressor=True, mode='multiplicative', holidays=False)
-# arima = arima_predictions(train_stock, valid_stock, regressor=True)
+arima = arima_predictions(train_stock, valid_stock, regressor=True)
 # The validation split is used to set all the hyper-parameters that cannot be found with grid search algorithms
 train_stock = concat([train_stock, valid_stock])
 prophet_predictions(train_stock, test_stock, regressor=True, mode='multiplicative', holidays=False)
-# arima_test(model=arima, train=train_stock, test=test_stock, regressor=True)
+arima_test(model=arima, train=train_stock, test=test_stock, regressor=True)
 # Remake the prediction using the model that led to best results in the previous step
 train = concat([train, valid])
+# # todo: only one of the models
 prophet_predictions(train, test, regressor=True, mode='multiplicative', holidays=False)
+arima_test(model=arima, train=train, test=test, regressor=True)
