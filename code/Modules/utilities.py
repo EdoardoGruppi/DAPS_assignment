@@ -323,6 +323,10 @@ def check_stationarity(time_series):
     """
     # Make sure that the original time series is not modified
     series = time_series.copy()
+    sn.set()
+    fig, axes = plt.subplots(1, 2, figsize=(22, 6))
+    sn.lineplot(x=series.index, y=series.values, ax=axes[0])
+    axes[0].set_title('Original series')
     print('Results of Dickey-Fuller Test:')
     adf_test = ADFTest(alpha=0.05)
     diff_order = 0
@@ -336,6 +340,10 @@ def check_stationarity(time_series):
             series = series.diff(periods=diff_order).bfill()
         else:
             break
+    sn.lineplot(x=series.index, y=series.values, ax=axes[1])
+    axes[1].set_title(f'Trend-stationary series after differencing (diff.order: {diff_order})')
+    plt.tight_layout()
+    plt.show()
 
 
 def plot_auto_correlation(series, title=None, lags=None, partial=True):
@@ -554,3 +562,22 @@ def scatter_plot(dataframe, columns):
     sn.scatterplot(data=dataframe, x=columns[0], y=columns[1])
     plt.tight_layout()
     plt.show()
+
+
+def plot_attribute_properties(series):
+    """
+    Simple functions to plot the boxplot and the distribution of a time series.
+
+    :param series: series to analyse.
+    :return:
+    """
+    sn.set()
+    fig = plt.figure(figsize=(3, 6))
+    sn.boxplot(data=series, linewidth=2)
+    plt.tight_layout()
+    plt.show()
+    fig = plt.figure(figsize=(6, 6))
+    sn.displot(data=series, linewidth=2, kde=True)
+    plt.tight_layout()
+    plt.show()
+
