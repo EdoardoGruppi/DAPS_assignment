@@ -112,7 +112,8 @@ def get_indexes(filename='Indexes'):
 
 def time_series_preprocessing(time_series, indexes, method='linear', cap=None, nan=False, path=True, multi=False):
     """
-    Pre-processes the time series dropping and combining columns. It allows also to operate outliers and missing values.
+    Initially the Indexes are merged with the stock data. Subsequently the function pre-processes the stock dataset
+    obtained dropping and combining columns. It allows also to operate outliers and missing values.
 
     :param time_series: name or path of the file where the time series is saved according to the value of the boolean
         argument path.
@@ -123,42 +124,38 @@ def time_series_preprocessing(time_series, indexes, method='linear', cap=None, n
         to change. default_value=None
     :param nan: important only if cap is True. If True the outliers are substituted by NaN, otherwise they are replaced
         by the maximum value not detected as outlier. default_value=False
-    :param path: if True time_series is the path of the file where the. Else the name. default_value=True
+    :param path: if True time_series and indexes are the paths of the files where the data is stores. Otherwise, they
+        are the name. default_value=True
     :param multi: if True it can detect multivariate outliers using algorithms such as isolation forest.
         default_value=False
     :return:
     """
+    # If path=True time series and indexes are the paths of the pkl files.Otherwise the filenames
     if path:
         time_series = read_pickle(time_series)
         indexes = read_pickle(indexes)
+    # Set the date as index to combine the two datasets
     time_series = time_series.set_index('date')
     indexes = indexes.set_index('Date')
     time_series = combine_dataset([time_series, indexes])
     # Discard some columns that are not necessary like close, dividend amounts and split. In particular, adjusted close
-    # is usually used to estimate historical correlation and volatility of companies stocks. The adjusted
-    # closing price analyses the stock's dividends, stock splits and new stock offerings to determine an adjusted value.
-    # Plot relationships between the features. Almost perfectly correlated features may be represented by only one var.
-    # todo -- multivariate_visualization(time_series.drop(['Dividend', 'Split', 'Original Close'], axis=1))
+    # is usually used to estimate historical correlation and volatility of companies stocks. The adjusted closing
+    # price analyses the stock's dividends, stock splits and new stock offerings to determine an adjusted value.
+    # Plot relationships between the features. Almost perfectly correlated independent features can be represented by
+    # only one variable. This helps to avoid the multicollinearity problem.
+    multivariate_visualization(time_series.drop(['Dividend', 'Split', 'Original Close'], axis=1))
     # scatter_plot(time_series, ['Open', 'High'])
+    # Retain only the 'Close', 'Volume' and 'S&p 100' columns
     time_series = time_series[['Close', 'Volume', 'S&p 100']]
-    # Detect outliers
-    # todo -- detect_univariate_outlier(time_series, cap=cap, nan=nan)
+    # Detect univariate outliers
+    detect_univariate_outlier(time_series, cap=cap, nan=nan)
     if multi:
-        # the next line allows to detect multivariate outliers using for instance isolation forest.
+        # The next line allows to detect multivariate outliers using for instance isolation forest.
         outliers_index = detect_multivariate_outlier(time_series, clf='iforest')
-    # Add the missing days that are not considered since the stock market is closed during weekends and holidays.
-    # In this case asfreq() could also be used instead of resample() since it is adopted only to add non-working day
+    # Add the missing days that are not considered given that the stock market is closed during weekends and holidays.
+    # In this case asfreq() can also be used instead of resample() since it is adopted only to add non-working day
     # and the sampling frequency is already daily.
     time_series = time_series.asfreq('D')
     # Interpolate to substitute each NaN with a likely value
     time_series = time_series.interpolate(method=method)
     return time_series
-
-
-# volatility = time_series.Close.rolling(window=10, min_periods=10).std().replace(0, np.nan).bfill()
-# time_series.Close /= volatility
-# decompose_series(time_series.Close)
-#
-# volatility = series.rolling(window=365, min_periods=1).std().replace(0, np.nan).bfill()
-# ajeje = series.values / volatility
-# residuals_properties(ajeje)

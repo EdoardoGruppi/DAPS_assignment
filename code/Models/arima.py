@@ -1,7 +1,6 @@
 # Import packages
-from Modules.utilities import decompose_series, check_stationarity
-from pmdarima.arima import auto_arima, ndiffs, nsdiffs
-from pandas import DataFrame, concat
+from pmdarima.arima import auto_arima
+from pandas import DataFrame
 import seaborn as sn
 import matplotlib.pyplot as plt
 from Modules.utilities import metrics, residuals_properties
@@ -129,10 +128,8 @@ def arima_results(results, conf, data_train, data_test, residual):
     plt.ylabel('Observations')
     plt.tight_layout()
     plt.show()
+    print('ARIMA')
     # Visualize residuals properties
     residuals_properties(residual)
     # Evaluate model prediction capability through a series of metrics
     metrics(results.y, results.y_hat)
-
-
-

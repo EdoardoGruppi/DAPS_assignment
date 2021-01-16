@@ -2,9 +2,9 @@
 from fbprophet import Prophet
 import matplotlib.pyplot as plt
 import seaborn as sn
-from pandas import to_datetime, concat, DataFrame, merge
+from pandas import to_datetime, concat
 from Modules.config import *
-from Modules.utilities import metrics, decompose_series, residuals_properties
+from Modules.utilities import metrics, residuals_properties
 
 
 def prophet_predictions(train, test, regressor=True, mode='multiplicative', holidays=False, sps=10, cps=0.1,
@@ -32,7 +32,7 @@ def prophet_predictions(train, test, regressor=True, mode='multiplicative', holi
                     interval_width=interval, daily_seasonality=False, seasonality_prior_scale=sps,
                     changepoint_prior_scale=cps, n_changepoints=n_change_points)
     # Add seasonality to the model
-    # model.add_seasonality(name='two-years', period=700, fourier_order=20, prior_scale=15)
+    model.add_seasonality(name='two-years', period=700, fourier_order=20, prior_scale=15)
     # If requested add holidays component to the model
     if holidays:
         model.add_country_holidays(country_name='US')
@@ -50,7 +50,7 @@ def prophet_predictions(train, test, regressor=True, mode='multiplicative', holi
     future = model.make_future_dataframe(periods=test.shape[0], freq='1D')
     if regressor:
         # Add the regressor values within the test period
-        exogenous = exogenous.reset_index().rename(columns={'date': 'ds'}).drop('ds', axis=1)
+        exogenous = exogenous.reset_index().drop('date', axis=1)
         future = concat([future, exogenous], axis=1)
     # Make the prediction with the Prophet model
     forecast = model.predict(future)
@@ -131,27 +131,48 @@ def prophet_results(forecast, data_train, data_test):
     ax.axvline(forecast.loc[start_test, 'ds'], color='k', ls='--', alpha=0.7)
     plt.tight_layout()
     plt.show()
-    # todo -- Joint plot between the true and predicted values
-    # sn.jointplot(x='yhat', y='y', data=train, kind="reg", color="b")
-    # plt.xlabel('Predictions')
-    # plt.ylabel('Observations')
-    # plt.show()
-    # sn.jointplot(x='yhat', y='y', data=test, kind="reg", color="b")
-    # plt.xlabel('Predictions')
-    # plt.ylabel('Observations')
-    # plt.tight_layout()
-    # plt.show()
+    # Joint plot between the true and predicted values
+    sn.jointplot(x='yhat', y='y', data=train, kind="reg", color="b")
+    plt.xlabel('Predictions')
+    plt.ylabel('Observations')
+    plt.show()
+    sn.jointplot(x='yhat', y='y', data=test, kind="reg", color="b")
+    plt.xlabel('Predictions')
+    plt.ylabel('Observations')
+    plt.tight_layout()
+    plt.show()
+    print('Facebook Prophet')
     # Visualize residuals properties
     residuals_properties(residuals)
     # Evaluate model prediction capability through a series of metrics
     metrics(test.y, test.yhat)
 
 
-# def p_p(train, test, mode='multiplicative', sps=10, cps=0.1, interval=0.95, n_change_points=25):
+# def prophet_ma(train, test, mode='multiplicative', sps=10, cps=0.1, interval=0.95, n_change_points=25):
 #     # Prepare data as required by Prophet
 #     data = prepare_data(train, 'Close')
-#
 #     forecast = None
+#     model = Prophet(seasonality_mode=mode, yearly_seasonality=False, weekly_seasonality=False,
+#                     interval_width=interval, daily_seasonality=False, seasonality_prior_scale=sps,
+#                     changepoint_prior_scale=cps, n_changepoints=n_change_points)
+#     # Select the columns related only to the exogenous variables
+#     columns = [col for col in train.columns if col != 'Close']
+#     # Add each additional variable as a regressor
+#     for col in columns:
+#         model.add_regressor(col)
+#     # Train the model
+#     model.fit(data)
+#     future = model.make_future_dataframe(periods=0, freq='1D')
+#     exogenous = train[columns].reset_index().rename(columns={'date': 'ds'})
+#     future = future.merge(exogenous, how='left')
+#     forecast = model.predict(future)
+#     residuals_df = DataFrame(data={'residuals': data['y']-forecast['yhat']})
+#     new_row = {'residuals': 0}
+#     # append row to the dataframe
+#     residuals_df = residuals_df.append(new_row, ignore_index=True)
+#     residuals_df = residuals_df.shift(1).bfill()
+#     data = concat([data, residuals_df.head(1094)], axis=1)
+#
 #     for day in range(1, test.shape[0]+1):
 #         model = Prophet(seasonality_mode=mode, yearly_seasonality=False, weekly_seasonality=False,
 #                         interval_width=interval, daily_seasonality=False, seasonality_prior_scale=sps,
@@ -162,15 +183,24 @@ def prophet_results(forecast, data_train, data_test):
 #         for col in columns:
 #             model.add_regressor(col)
 #         exogenous = concat([train[columns], test[columns].head(day)])
+#         model.add_regressor('residuals')
+#         residuals_df.index = exogenous.index
+#         exogenous = concat([exogenous, residuals_df], axis=1)
 #         # Train the model
 #         model.fit(data)
 #         # Specify the number of days in the future to predict
 #         future = model.make_future_dataframe(periods=1, freq='1D')
 #         # Add the regressor values within the test period
-#         exogenous = exogenous.reset_index().rename(columns={'date': 'ds'}).drop('ds', axis=1)
+#         exogenous = exogenous.reset_index().drop('date', axis=1)
 #         future = concat([future, exogenous], axis=1)
 #         # Make the prediction with the Prophet model
 #         forecast = model.predict(future)
-#         data = concat([data, forecast])
+#         df = exogenous.tail(1)
+#         last_forecast = forecast.tail(1)
+#         df['ds'] = last_forecast['ds']
+#         df['y'] = last_forecast['trend']
+#         data = concat([data, df])
+#         new_residual = {'residuals': last_forecast['trend'].values[0]-last_forecast['yhat'].values[0]}
+#         residuals_df = residuals_df.append(new_residual, ignore_index=True)
 #     # Visualize the results obtained
 #     prophet_results(forecast, train, test)

@@ -128,7 +128,7 @@ def tweet_preprocessing(df_path, analysis='vader', like_weight=0, reply_weight=0
     tweets = read_pickle(df_path)
     # drop() function is not used since the number of columns to keep is lower than the number of columns to delete.
     # The new dataframe simply overwrites the previous one.
-    tweets = tweets[['date', 'time', 'tweet', 'replies_count', 'retweets_count', 'likes_count']]
+    tweets = tweets[['date', 'time', 'tweet', 'replies_count', 'retweets_count', 'likes_count']].copy()
     # Date and time are combined and substituted by a datetime attribute. This allows to avoid discrepancies when
     # datasets will be joined together and facilitate several operations performed.
     tweets['date'] = tweets['date'] + ' ' + tweets['time']

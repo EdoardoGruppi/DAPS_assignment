@@ -6,18 +6,17 @@ from pandas import read_csv, read_pickle, DataFrame, concat, Series
 from Modules.config import *
 import mplfinance as mpf
 from statsmodels.tsa.seasonal import seasonal_decompose
-from statsmodels.tsa.stattools import adfuller, grangercausalitytests
+from statsmodels.tsa.stattools import grangercausalitytests
 from statsmodels.stats.stattools import durbin_watson
 from statsmodels.graphics.tsaplots import plot_acf, plot_pacf
 from statsmodels.api import qqplot
 from scipy import stats
 import numpy as np
-import pylab
-from sklearn.preprocessing import MinMaxScaler, StandardScaler
+from sklearn.preprocessing import MinMaxScaler
 from sklearn.decomposition import PCA, KernelPCA
 from sklearn.manifold import TSNE
 from pyod.models import feature_bagging, hbos, iforest, knn, mcd
-from pmdarima.arima import ADFTest, ndiffs
+from pmdarima.arima import ADFTest
 
 
 def detect_univariate_outlier(dataframe, cap=None, nan=False):
@@ -48,13 +47,16 @@ def detect_univariate_outlier(dataframe, cap=None, nan=False):
         minimum = q1 - 1.5 * (q3 - q1)
         maximum = q3 + 1.5 * (q3 - q1)
         outlier_iqr_loc = dataframe.index[np.where((data < minimum) | (data > maximum))]
-        g = sn.scatterplot(x=dataframe.index, y=data, hue=(data < minimum) | (data > maximum), ax=axes[1], legend=False)
+        g = sn.scatterplot(x=dataframe.index, y=data, hue=(data < minimum) | (data > maximum), ax=axes[1])
         g.set(xlabel=None, ylabel=None)
+        axes[0].legend(loc='upper left')
         # Compute Z-score outliers and their position
         z = np.abs(stats.zscore(data))
         outlier_z_loc = dataframe.index[np.where(z > 3)]
-        g = sn.scatterplot(x=dataframe.index, y=z, hue=z > 3, ax=axes[2], legend=False)
+        g = sn.scatterplot(x=dataframe.index, y=z, hue=z > 3, ax=axes[2])
         g.set(xlabel=None, ylabel=None)
+        axes[1].legend(loc='upper left')
+        plt.tight_layout()
         plt.show()
         # Change the outlier values if required and if there are outliers
         if cap == 'z_score' and len(outlier_z_loc) > 0:
@@ -62,8 +64,9 @@ def detect_univariate_outlier(dataframe, cap=None, nan=False):
                 # Replace with Nan values
                 data[outlier_z_loc] = float('nan')
             else:
-                # Find all the elements that do not correspond to outliers
+                # Find all the elements that correspond to outliers
                 dropped_outlier_dataset = data[np.setdiff1d(data.index, outlier_z_loc)]
+                # Set all the outliers values as the maximum value of the non outliers data points
                 data[outlier_z_loc] = np.max(dropped_outlier_dataset)
             # Save the changed values in the dataframe passed
             dataframe[column] = data
@@ -74,6 +77,7 @@ def detect_univariate_outlier(dataframe, cap=None, nan=False):
             else:
                 # Find all the elements that do not correspond to outliers
                 dropped_outlier_dataset = data[np.setdiff1d(data.index, outlier_iqr_loc)]
+                # Set all the outliers values as the maximum value of the non outliers data points
                 data[outlier_iqr_loc] = np.max(dropped_outlier_dataset)
             # Save the changed values in the dataframe passed
             dataframe[column] = data
@@ -113,7 +117,7 @@ def dataset_division(dataframe, valid_size=30, percentage=False):
     number of observations or in percentage.
 
     :param dataframe: dataset to segment.
-    :param valid_size: dimension of validation set in number of observations or percentage. In the latter case set the
+    :param valid_size: dimension of validation set in number of observations or percentage. In the latter case, set the
         percentage parameter to True. default_value=False
     :param percentage: if True valid_size is expressed as a percentage. default_value=False.
     :return: the three parts obtained after the splitting
@@ -147,7 +151,8 @@ def combine_dataset(datasets):
     for dataset in datasets:
         dataframe = dataframe.join(dataset, how='left')
     # Drop all the observations that exceed the entire period observed
-    dataframe = dataframe[starting_date:ending_test_period]
+    dataframe = dataframe.loc[starting_date:ending_test_period]
+    dataframe = dataframe.sort_index()
     # Replace the missing values created by this step with 0
     dataframe = dataframe.fillna(0)
     return dataframe
@@ -238,18 +243,18 @@ def metrics(y, y_hat):
     :return:
     """
     # Compute errors
-    d = y - y_hat
+    errors = y - y_hat
     # Compute and print metrics
-    mse_f = np.mean(d ** 2)
-    mae_f = np.mean(abs(d))
+    mse_f = np.mean(errors ** 2)
+    mae_f = np.mean(abs(errors))
     rmse_f = np.sqrt(mse_f)
     mape = np.mean(np.abs(y_hat - y) / np.abs(y))
     mpe = np.mean((y_hat - y) / y)
     corr = np.corrcoef(y_hat, y)[0, 1]
-    r2_f = 1 - (sum(d ** 2) / sum((y - np.mean(y)) ** 2))
-    print('\nResults by manual calculation:\n',
+    r2_f = 1 - (sum(errors ** 2) / sum((y - np.mean(y)) ** 2))
+    print('Results by manual calculation:\n',
           f'- MAPE: {mape:.4f} \n - RMSE: {rmse_f:.4f} \n - CORR: {corr:.4f} \n - R2: {r2_f:.4f}\n',
-          f'- MAE: {mae_f:.4f} \n - MPE: {mpe:.4f} \n - MSE: {mse_f:.4f}')
+          f'- MAE: {mae_f:.4f} \n - MPE: {mpe:.4f} \n - MSE: {mse_f:.4f}\n')
 
 
 def residuals_properties(residuals):
@@ -264,7 +269,7 @@ def residuals_properties(residuals):
     residuals = residuals[1:]
     mean = residuals.mean()
     median = np.median(residuals)
-    # skewness = 0 : normally distributed.
+    # skewness = 0 : same weight in both the tails such as a normal distribution.
     # skewness > 0 : more weight in the left tail of the distribution. Long right tail. Median before mean.
     # skewness < 0 : more weight in the right tail of the distribution. Long left tail. Median after mean.
     skew = stats.skew(residuals)
@@ -279,9 +284,9 @@ def residuals_properties(residuals):
     shapiro = stats.shapiro(residuals)[1]
     # Anderson-Darling test null hypothesis: the sample follows the normal distribution
     anderson = stats.normaltest(residuals)[1]
-    print(f'\nResidual information:\n - Mean: {mean:.4f} \n - Median: {median:.4f} \n - Skewness: {skew:.4f} '
+    print(f'Residual information:\n - Mean: {mean:.4f} \n - Median: {median:.4f} \n - Skewness: {skew:.4f} '
           f'\n - Kurtosis: {kurtosis:.4f}\n - Durbin: {durbin:.4f}',
-          f'\n - Shapiro p-value: {shapiro:.4f}\n - Anderson p-value: {anderson:.4f}\n')
+          f'\n - Shapiro p-value: {shapiro:.4f}\n - Anderson p-value: {anderson:.4f}')
     # Create plots
     sn.set()
     fig, axes = plt.subplots(1, 5, figsize=(25, 5.3))
@@ -327,7 +332,7 @@ def check_stationarity(time_series):
     fig, axes = plt.subplots(1, 2, figsize=(22, 6))
     sn.lineplot(x=series.index, y=series.values, ax=axes[0])
     axes[0].set_title('Original series')
-    print('Results of Dickey-Fuller Test:')
+    print('\nResults of Dickey-Fuller Test:')
     adf_test = ADFTest(alpha=0.05)
     diff_order = 0
     while True:
@@ -423,27 +428,30 @@ def decompose_series(series, period=None, mode='multiplicative'):
     axes[3].set_ylabel('Residual')
     fig.tight_layout()
     plt.show()
-    print(f'{mode}: [mean: {result.seasonal.mean()}, max:{result.seasonal.max()}, min:{result.seasonal.min()}]')
+    # Print the mean, max and min of the residuals
+    print(f'{mode}: [mean: {result.seasonal.mean()}, max:{result.seasonal.max()}, min:{result.seasonal.min()}]\n')
+    # Visualize residuals properties
     residuals_properties(result.resid.dropna())
 
 
-def ohlc_chart(data, start=starting_date, end=ending_date, candle_size='W', volume=False):
+def ohlc_chart(path, start=starting_date, end=ending_date, candle_size='W', volume=False):
     """
     Plots the open, high, low, close chart of the company.
 
-    :param data: stock dataset.
+    :param path: company's stock data path.
     :param start: the first date to consider while creating the chart. default_value=starting_date
     :param end: the last date to consider while creating the chart. default_value=ending_date
     :param candle_size: dimension of the candles. default_value='W'
     :param volume: if True the volume is also reported below the ohlc chart. default_value=False
-    :return:
+    :return: the plot is saved in the code folder under the filename ohlc.png
     """
-    data = data[start:end].resample(candle_size).mean()
+    data = read_pickle(path)
+    data = data.set_index('date')
+    data = data.loc[start:end].resample(candle_size).mean()
     # Plot candlestick.
     new_style = mpf.make_mpf_style(base_mpl_style='seaborn', rc={'axes.grid': True})
     mpf.plot(data, type='candle', ylabel='Price ($)', volume=volume, mav=(5, 10), figsize=(30, 7), style=new_style,
              scale_padding=0.05, xrotation=0, savefig=dict(fname="ohlc.png", bbox_inches="tight"))
-    mpf.show()
 
 
 def csv2pickle(filename, remove=True):
@@ -580,4 +588,3 @@ def plot_attribute_properties(series):
     sn.displot(data=series, linewidth=2, kde=True)
     plt.tight_layout()
     plt.show()
-

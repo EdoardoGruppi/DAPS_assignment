@@ -1,6 +1,6 @@
 # Import packages
 from covid19dh import covid19
-from pandas import DataFrame, to_pickle, read_pickle
+from pandas import to_pickle, read_pickle
 import os
 from Modules.config import *
 from datetime import datetime
