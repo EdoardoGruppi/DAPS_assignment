@@ -2,6 +2,8 @@
 
 [Project](https://github.com/EdoardoGruppi/DAPS_assignment) ~ [Guide](https://github.com/EdoardoGruppi/DAPS_assignment/blob/Secondary/code/Instructions.md)
 
+In this project, the prediction of the Microsoft stock value is addressed pursuing distinct strategies according to the data exploited to perform the forecasting. In the first approach, the information retrieved is obtained exclusively from the company's stock data. In the second strategy, the model leverages also the overall public sentiment towards the company, extracted from the Twitter platform, along with the records related to the ongoing pandemic. (See the pdf file for more information).
+
 ## How to start
 
 A comprehensive guide concerning how to run the code along with additional information is provided in the file [Instruction.md](https://github.com/EdoardoGruppi/DAPS_assignment/blob/Secondary/code/Instructions.md).
