@@ -73,13 +73,13 @@ Please note that the descriptions provided in this subsection are taken directly
 
 **utilities.py** provides several functions useful to analyse data through visualization and statistic. Moreover, additional functionalities are made available to simply manage and handle data.
 
-**exploration.py**
+**exploration.py** includes a list of functions executed to perform exploration data analysis and hypothesis testing.
 
-**mongo_db.py**
+**mongo_db.py** is a central module to interact with the cloud database and to retrieve the datasets. Thanks to the upload_datasets() function it allowed to upload all the data acquired into the cloud.
 
 **arima.py** contains all the necessary to predict future values of a time series through a model of the ARIMA's family.
 
-**prophet.py** offfers the possibility to forecast future values of a time series via the Facebook Prophet model.
+**prophet.py** offers the possibility to forecast future values of a time series via the Facebook Prophet model.
 
 **\_Additional_code folder** includes some .py files useful for the code devolepment as well as to report the most noteworthy experiments conducted during the project.
 
