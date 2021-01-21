@@ -3,11 +3,11 @@
 ## Setup
 
 1. Install all the other packages appointed in the [README.md](https://github.com/EdoardoGruppi/DAPS_assignment) file using conda or pip.
-2. To install Twint could be necessary to run the code below to be sure that the last version is installed.
+2. To install Twint it could be necessary to run the code below to be sure that the last version is installed.
    ```
    pip install --user --upgrade git+https://github.com/twintproject/twint.git@origin/master#egg=twint
    ```
-3. Install flair. Note that to run Flair with GPU it is required to have torch with cuda enabled.
+3. Install flair. Note that to run Flair with GPU (not mandatory) it is required to have torch with cuda enabled.
 
    ```
    pip install flair
@@ -27,7 +27,7 @@
    torch.zeros(1).cuda()
    ```
 
-4. When installing fbprophet it is needed to run the following lines since there is a conflict between specific version of fbprophet and pystan.
+4. When installing fbprophet it is needed to run the following lines to solve a conflict between specific versions of fbprophet and pystan.
    ```
    conda install -c conda-forge fbprophet
    conda install -c conda-forge pystan
@@ -51,7 +51,7 @@ python main.py
 
 ### Stock data acquisition and storage
 
-Rather than running the data_gathere.py script it is preferable to downlad the datasets from the cloud database link provided. Indeed, the data acquistion process through the first solution requires at least 70-80 minutes (more than 10 times the time required by the second solution). Moreover, the code is mainly based on the datasets version provided by the MongoDB database link. Otherwise, there may be some little differences that can create conflicts.
+Rather than running the data_gatherer.py script it is preferable to download the datasets from the cloud database link provided. Indeed, the data acquistion process through the first solution requires at least 70-80 minutes (more than 10 times the time required by the second solution). Moreover, the code is mainly based on the versions of the datasets provided by the MongoDB database. Otherwise, there may be some little differences that can create conflicts.
 
 ```python
 # Download datasets from Mongo DB
@@ -69,7 +69,7 @@ news_dir = os.path.join(base_dir, 'News.pkl')
 
 ### Data preprocessing
 
-In this phase the datasets before obtained are processed according to the content hosted. Whereas the tweets dataset is elaborated through the VADER tool, the news preprocessing involves a FLAIR pre-trained model.
+In this phase the datasets obtained are processed according to the content hosted. Whereas the tweets dataset is elaborated through the VADER tool, the news preprocessing employs the FLAIR pre-trained model.
 
 ```python
 stock_data = time_series_preprocessing(time_series_dir, indexes_dir, path=True)
@@ -80,7 +80,7 @@ news = tweet_preprocessing(news_dir, analysis='flair', like_weight=0, reply_weig
 covid = covid_preprocessing(covid_dir, daily_change=True)
 ```
 
-As last step of the pre-processing phase the datasets are integrated together via the apposite function. Then the unified dataset is divided in three parts for: training, validation and test.
+As last step of the pre-processing phase the datasets are integrated together via the dedicated function. Then the unified dataset is divided in three parts for: training, validation and test.
 
 ```python
 # Change the column names that can create conflicts
@@ -127,13 +127,18 @@ custom_test_2(dataframe.Covid, dataframe_pct.Sentiment, percentile=90, test=0)
 custom_test_2(dataframe_pct.Close, dataframe.Sentiment, percentile=50, test=1)
 ```
 
-Then, the variables that turned out to be not really useful can be discarded. In the following lines the train, validation and test sets are also obtained to perform the forecasting starting from the sole company's stock data. Then the variables used are normalized, scaled or reduced according to which dataset is considered.
+Then, the variables that turned out to be not really useful can be discarded.
 
 ```python
 del new_dataframe, dataframe, columns
 train = train.drop(['Mood'], axis=1)
 valid = valid.drop(['Mood'], axis=1)
 test = test.drop(['Mood'], axis=1)
+```
+
+In the following lines the train, validation and test sets are also obtained to perform the forecasting starting from the sole company's stock data. Then the variables used are normalized, scaled or reduced according to which dataset is considered. Specifically, the dataset related only to Microsoft comprises two columns: close and volume. The volume column is only rescaled to develop on the same range of the close attribute. The second dataset is made up of the close, volume, S&p 100, covid and sentiment variables. In this case the variables are normalized, reduced and rescaled.
+
+```python
 train_stock, valid_stock, test_stock = dataset_division(stock_data.drop(['S&p 100'], axis=1))
 train_stock, valid_stock, test_stock = transform_dataset(train_stock, valid_stock, test_stock, reduction=False)
 train, valid, test = transform_dataset(train, valid, test, algorithm='pca', n_components=0.90, reduction=True)
@@ -152,7 +157,7 @@ The following commented lines describe the validation phase in which the model h
 # The validation split is used to set all the hyper-parameters that cannot be found with grid search algorithms
 ```
 
-Since the ARIMA model hyper-parameters are obtained through cross-validation via the pmdarima function, the previous lines should be uncommented. Nevertheless, since the results of the function does not change in this case, the cross-validation is applied on the entire training dataset to reduce the total execution time and the amount of images displayed that can create a little of disorder.
+The ARIMA hyper-parameters are obtained through cross-validation via the pmdarima function. Since the results of the function does not change in case the cross-validation is applied directly on the entire training dataset, to reduce the total execution time and the amount of images displayed that can create a little of disorder the lines above are commented and the code below presents `arima = arima_predictions(train_stock, test_stock, regressor=True)` instead of `arima_test(model=arima, train=train_stock, test=test_stock, regressor=True)`.
 
 ```python
 train_stock = concat([train_stock, valid_stock])
@@ -165,6 +170,6 @@ arima_test(model=arima, train=train, test=test, regressor=True)
 
 ## Additional information
 
-A more detailed overview of the project is provided in the report published (the pdf file).
+A more detailed overview of the project is provided in the report published [(the pdf file)](https://github.com/EdoardoGruppi/DAPS_assignment/blob/Secondary/Report_DAPS_20_21__SN20172994.pdf).
 
 ## Issues

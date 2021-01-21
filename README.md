@@ -2,7 +2,7 @@
 
 [Project](https://github.com/EdoardoGruppi/DAPS_assignment) ~ [Guide](https://github.com/EdoardoGruppi/DAPS_assignment/blob/Secondary/code/Instructions.md)
 
-In this project, the prediction of the Microsoft stock value is addressed pursuing distinct strategies according to the data exploited to perform the forecasting. In the first approach, the information retrieved is obtained exclusively from the company's stock data. In the second strategy, the model leverages also the overall public sentiment towards the company, extracted from the Twitter platform, along with the records related to the ongoing pandemic. (See the pdf file for more information).
+In this project, the prediction of the Microsoft stock value is addressed pursuing two distinct strategies according to the data exploited to perform the forecasting. In the first approach, the information retrieved is obtained exclusively from the company's stock data. In the second strategy, the model leverages also the overall public sentiment towards the company, extracted from the Twitter platform, along with the records related to the ongoing pandemic. (Introduction from the abstract of the report. See the pdf file for more information).
 
 ## How to start
 
@@ -31,17 +31,17 @@ Please note that the descriptions provided in this subsection are taken directly
 
 - **Alpha_vantage** delivers a free API for real time financial data and most used finance indicators in a simple json or pandas format. This module implements a python interface to the free API provided by Alpha Vantage.
 
-- **Pmdarima** pmdarima brings R’s auto.arima function to Python. Pmdarima is written in Python and Cython and provides an easy-to-use set of functions and classes.
+- **Pmdarima** brings R’s auto.arima function to Python. Pmdarima is written in Python and Cython and provides an easy-to-use set of functions and classes.
 
 - **Fbprophet** is a procedure for forecasting time series data based on an additive model where non-linear trends are fit with yearly, weekly, and daily seasonality, plus holiday effects. Prophet is robust to missing data and shifts in the trend, and typically handles outliers well.
 
 - **Mplfinance** provides several utilities for the visualization, and visual analysis, of financial data.
 
-- **Statsmodels** statsmodels is a Python package that provides a complement to scipy for statistical computations including descriptive statistics and estimation and inference for statistical models.
+- **Statsmodels** is a Python package that provides a complement to scipy for statistical computations including descriptive statistics and estimation and inference for statistical models.
 
 - **Scipy** is an open-source software for mathematics, science, and engineering. The SciPy library strictly depends on NumPy.
 
-- **Pylab** is a procedural interface to the Matplotlib object-oriented plotting library. Actually, PyLab is not a package. It is a module that gets installed alongside Matplotlib.
+- **Pylab** is a procedural interface to the Matplotlib object-oriented plotting library. Actually, PyLab is not a package but a module that gets installed alongside Matplotlib.
 
 - **Re** provides regular expression matching operations similar to those found in Perl. Built-in package.
 
@@ -57,7 +57,7 @@ Please note that the descriptions provided in this subsection are taken directly
 
 ## Role of each file
 
-**main.py** is the starting point of the entire project. It defines the order in which instructions are realised. More precisely, it is responsible to call functions from other files in order to divide the datasets provided, pre-process images and instantiate, train and test models.
+**main.py** is the starting point of the entire project. It defines the order in which instructions are realised. More precisely, it is responsible to call functions from other files in order to divide the datasets provided, pre-process data and instantiate, train and test models.
 
 **config.py** makes available all the global variables used in the project.
 
@@ -69,11 +69,11 @@ Please note that the descriptions provided in this subsection are taken directly
 
 **sentiment_analysis.py** offers functions to perform natural language processing using either a flair pre-trained model or vader.
 
-**stock_data.py** contains functions to collect and pre-process stock data through the alpha_vantage API.
+**stock_data.py** contains functions to collect and pre-process stock and indexes data obtained through the alpha_vantage API and the pandas data_reader respectively.
 
 **twitter_data.py** delivers functionalities to create queries, collect data from Twitter using Twint and pre-process tweets.
 
-**utilities.py** provides several functions useful to analyse data through visualization and statistic. Moreover, additional functionalities are made available to simply manage and handle data.
+**utilities.py** provides several functions useful to analyse data through visualization and statistic. Moreover, additional functionalities are made available to manage and handle data.
 
 **exploration.py** includes a list of functions executed to perform exploration data analysis and hypothesis testing.
 
