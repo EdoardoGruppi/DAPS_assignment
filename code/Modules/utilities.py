@@ -218,16 +218,16 @@ def transform_dataset(train, valid, test, algorithm='pca', n_components=2, kerne
         train_data = model.fit_transform(train_data)
         valid_data = model.transform(valid_data)
         test_data = model.transform(test_data)
-    # Scale all the other features to the scale of the main column
+    # Rescale all the other features to develop on the same range of the main column (close)
     scaler = MinMaxScaler(feature_range=(train.Close.min(), train.Close.max()))
     train_data = scaler.fit_transform(train_data)
     valid_data = scaler.transform(valid_data)
     test_data = scaler.transform(test_data)
-    # Recreate the dataframes from the array returned by the various algorithms involved
+    # Re-create the dataframes from the array returned by the various algorithms involved
     train = concat([DataFrame(train_data, index=train.index), train['Close']], axis=1)
     valid = concat([DataFrame(valid_data, index=valid.index), valid['Close']], axis=1)
     test = concat([DataFrame(test_data, index=test.index), test['Close']], axis=1)
-    # Transform in string all the names f the columns to avoid conflicts later.
+    # Transform in string all the names of the columns to avoid conflicts later.
     train.columns = [str(col) for col in train.columns]
     valid.columns = [str(col) for col in valid.columns]
     test.columns = [str(col) for col in test.columns]

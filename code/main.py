@@ -12,12 +12,12 @@ from Modules.mongo_db import download_datasets
 # STOCK DATA ACQUISITION AND STORAGE ===================================================================================
 # If the datasets are not directly provided from the beginning there are two possibilities:
 # 1. download the necessary information from the dedicated cloud database. The data was previously uploaded through the
-#    upload_datasets() available within the module called mongo_db.
-# 2. run the data_gatherer script from the terminal. However, this is not the best solution since the process of data
-#    acquisition at least 70-80 minutes. Moreover, the code is based on the version downloaded from MongoDB. It varies a
-#    little because of the conversion imposed by the cloud database platform, i.e. the datetime index is transformed in
-#    an attribute of the dataset.
-# Consequently, the first option is preferred.
+#    upload_datasets() available within the module named mongo_db.
+# 2. run the data_gatherer script from the terminal. However, this is not the preferred solution since the entire
+#    process of data acquisition takes at least 70-80 minutes. Moreover, the code is based on the version of the
+#    datasets downloaded from MongoDB. It varies a little because of the conversion imposed by the cloud database
+#    platform, i.e. the datetime index is transformed in an attribute of the dataset.
+# Consequently, the first option is adopted.
 download_datasets()
 # Once the datasets are locally available load the dataframes related to every pkl file.
 indexes_dir = os.path.join(base_dir, 'Indexes.pkl')
@@ -28,7 +28,7 @@ news_dir = os.path.join(base_dir, 'News.pkl')
 
 # DATA PREPROCESSING ===================================================================================================
 stock_data = time_series_preprocessing(time_series_dir, indexes_dir, path=True)
-# Ohlc chart will be saved inside the code folder. See ohlc.png file.
+# The Ohlc chart will be saved inside the code folder. See ohlc.png file.
 ohlc_chart(path=time_series_dir, candle_size='10D', start=starting_date, end=ending_date, volume=False)
 tweets = tweet_preprocessing(tweets_dir, analysis='vader', like_weight=0, reply_weight=0, retweet_weight=0, move=21)
 news = tweet_preprocessing(news_dir, analysis='flair', like_weight=0, reply_weight=0, retweet_weight=0, move=21)
@@ -77,13 +77,13 @@ train, valid, test = transform_dataset(train, valid, test, algorithm='pca', n_co
 
 # DATA INFERENCE =======================================================================================================
 # Selection of the hyper-parameters
-# Validate and compare models using only company's stock data
+# The validation split is used to set all the hyper-parameters that cannot be found with grid search algorithms
 # prophet_predictions(train_stock, valid_stock, regressor=True, mode='multiplicative', holidays=False)
 # arima = arima_predictions(train_stock, valid_stock, regressor=True)
-# The validation split is used to set all the hyper-parameters that cannot be found with grid search algorithms
+# Compare models using only company's stock data
 train_stock = concat([train_stock, valid_stock])
 prophet_predictions(train_stock, test_stock, regressor=True, mode='multiplicative', holidays=False)
 arima = arima_predictions(train_stock, test_stock, regressor=True)
-# Remake the prediction using the model that led to best results in the previous step
+# Re-execute the prediction using the model that led to best results in the previous step
 train = concat([train, valid])
 arima_test(model=arima, train=train, test=test, regressor=True)
