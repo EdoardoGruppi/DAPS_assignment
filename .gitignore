@@ -5,6 +5,7 @@ code/Datasets/MSFT_twitter_vader.pkl
 code/Datasets/News.pkl
 code/Datasets/News_flair.pkl
 code/Datasets/Time_series.pkl
+code/Modules/config.py
 
 code/.idea
 code/logs
